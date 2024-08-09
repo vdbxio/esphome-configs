@@ -1,0 +1,18 @@
+# Flip Panel 23.04-dev
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+
+substitutions:
+  name: "flip-panel"
+  friendly_name: "Flip Panel"
+  project_name: "vdbxio.flip panel"
+  project_version: "0.9.0"
+  idle_verb: "Idle"
+  package_git: "github://vdbxio/wiki/esphome/switch-panel.yaml"
+
+packages:
+  flipc3: !include packages/flipc3-base.yaml
+  wifi: !include packages/flipc3-wifi.yaml
+  dash: !include packages/dash-import.yaml
+  switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}

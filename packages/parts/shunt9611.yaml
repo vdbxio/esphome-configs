@@ -1,0 +1,33 @@
+
+# shunt9611: !include  {file: "packages/parts/shunt9611.yaml", vars: {address: 0x70, entid: shunt1 , interval: 1s}}
+
+sensor:
+  - platform: max9611
+    shunt_resistance: 0.01 ohm
+    gain: '1X'
+    voltage:
+        name: ${friendly_name} Voltage
+        id: ${entid}_volts
+    current:
+        name: ${friendly_name} Current
+        id: ${entid}_amps
+    power:
+        name: ${friendly_name} Watts
+        id: ${entid}_watts
+    temperature:
+        name: ${friendly_name} Temperature
+    address: ${address}
+    update_interval: ${interval}
+  - platform: total_daily_energy
+    name: "Total Daily Energy"
+    power_id: ${entid}_watts
+    filters:
+        # Multiplication factor from W to kW is 0.001
+        - multiply: 0.001
+    unit_of_measurement: kWh
+    restore: True
+  - platform: integration
+    name: "Total Daily Energy"
+    sensor: ${entid}_watts
+    time_unit: min
+    restore: True

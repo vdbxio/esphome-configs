@@ -1,0 +1,77 @@
+# Daly BMS 23.04-dev
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+
+substitutions:
+  name: "flip-panel"
+  friendly_name: "Flip Panel"
+  project_name: "vdbxio.flip panel"
+  project_version: "0.9.0"
+  package_git: "github://vdbxio/wiki/esphome/daly-bms.yaml@main"
+
+packages:
+  flipc3: !include packages/flipc3-base.yaml
+  wifi: !include packages/flipc3-wifi.yaml
+  dash: !include packages/dash-import.yaml
+  uart: !include packages/flipc3-uart.yaml
+  # switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}
+  # hoursCounter: !include  {file: "packages/parts/hours-count.yaml", vars: { entid: counter1 }}
+
+daly_bms:
+  update_interval: 5s
+
+sensor:
+  - platform: daly_bms
+    voltage:
+      name: "Battery Voltage"
+    current:
+      name: "Battery Current"
+    battery_level:
+      name: "Battery Level"
+    max_cell_voltage:
+      name: "Max Cell Voltage"
+    max_cell_voltage_number:
+      name: "Max Cell Voltage Number"
+    min_cell_voltage:
+      name: "Min Cell Voltage"
+    min_cell_voltage_number:
+      name: "Min Cell Voltage Number"
+    max_temperature:
+      name: "Max Temperature"
+    max_temperature_probe_number:
+      name: "Max Temperature Probe Number"
+    min_temperature:
+      name: "Min Temperature"
+    min_temperature_probe_number:
+      name: "Min Temperature Probe Number"
+    remaining_capacity:
+      name: "Remaining Capacity"
+    cells_number:
+      name: "Cells Number"
+    temperature_1:
+      name: "Temperature 1"
+    temperature_2:
+      name: "Temperature 2"
+    cell_1_voltage:
+      name: "Cell 1 Voltage"
+    cell_2_voltage:
+      name: "Cell 2 Voltage"
+    cell_3_voltage:
+      name: "Cell 3 Voltage"
+    cell_4_voltage:
+      name: "Cell 4 Voltage"
+
+text_sensor:
+  - platform: daly_bms
+    status:
+      name: "BMS Status"
+
+
+binary_sensor:
+  - platform: daly_bms
+    charging_mos_enabled:
+      name: "Charging MOS"
+    discharging_mos_enabled:
+      name: "Discharging MOS"
+

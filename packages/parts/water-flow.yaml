@@ -1,0 +1,18 @@
+
+### Still in testing.
+
+sensor:
+    - platform: pulse_counter
+      pin: 12
+      unit_of_measurement: 'L/min'
+      accuracy_decimals: 1
+      update_interval: 1s
+      name: 'Water Meter House'
+      filters:
+      - lambda: return (x / 450);  
+      total:
+        unit_of_measurement: 'L'
+        name: 'Water Meter Total'
+        accuracy_decimals: 1
+        filters:
+        - lambda: return (x / 450);

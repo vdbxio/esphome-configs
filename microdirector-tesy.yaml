@@ -1,0 +1,147 @@
+substitutions:
+  name: flip-c3-e41e18
+  friendly_name: Lighting Director Tesy
+packages:
+  #vdbxio.FLIP-C3: github://vdbxio/wiki/esphome/flip-c3.yaml
+  remote_package: 
+    url: https://github.com/vdbxio/wiki
+    file: esphome/flip-c3.yaml
+    refresh: 0s
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+api:
+  encryption:
+    key: KBgkUaarkB0hKRp2/QV5A88RFFmNlnypKnfTNHGXoIA=
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+
+
+
+# Minimalistic configuration entry, single chip, single output
+tlc59208f:
+  address: 0x48
+  id: tlc59208f_1
+
+
+
+# Individual outputs
+output:
+  - platform: tlc59208f
+    tlc59208f_id: 'tlc59208f_1'
+    channel: 0
+    inverted: True
+    id: out0
+    # min_power: 0.4
+    # zero_means_zero: True
+  - platform: tlc59208f
+    tlc59208f_id: 'tlc59208f_1'
+    channel: 1
+    inverted: True
+    id: out1
+    # min_power: 0.4
+    # zero_means_zero: True
+  - platform: tlc59208f
+    tlc59208f_id: 'tlc59208f_1'
+    channel: 2
+    inverted: True
+    id: out2
+  - platform: tlc59208f
+    tlc59208f_id: 'tlc59208f_1'
+    channel: 3
+    inverted: True
+    id: out3
+  - platform: tlc59208f
+    tlc59208f_id: 'tlc59208f_1'
+    channel: 4
+    inverted: True
+    id: out4
+  - platform: tlc59208f
+    tlc59208f_id: 'tlc59208f_1'
+    channel: 5
+    inverted: True
+    id: out5
+  - platform: tlc59208f
+    tlc59208f_id: 'tlc59208f_1'
+    channel: 6
+    inverted: True
+    id: out6
+  - platform: tlc59208f
+    tlc59208f_id: 'tlc59208f_1'
+    channel: 7
+    inverted: True
+    id: out7
+
+
+light:
+  - platform: monochromatic
+    name: "MOSFET 0"
+    output: out0
+    disabled_by_default: True
+    gamma_correct: 0
+  - platform: monochromatic
+    name: "MOSFET 1"
+    output: out1
+    disabled_by_default: True
+    gamma_correct: 0
+  - platform: monochromatic
+    name: "MOSFET 2"
+    output: out2
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 3"
+    output: out3
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 4"
+    output: out4
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 5"
+    output: out5
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 6"
+    output: out6
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 7"
+    output: out7
+    gamma_correct: 0
+    disabled_by_default: True
+
+switch:
+  - platform: output
+    name: "Switch 0"
+    output: 'out0'
+  - platform: output
+    name: "Switch 1"
+    output: 'out1'
+  - platform: output
+    name: "Switch 2"
+    output: 'out2'
+  - platform: output
+    name: "Switch 3"
+    output: 'out3'
+  - platform: output
+    name: "Switch 4"
+    output: 'out4'
+  - platform: output
+    name: "Switch 5"
+    output: 'out5'
+  - platform: output
+    name: "Switch 6"
+    output: 'out6'
+  - platform: output
+    name: "Switch 7"
+    output: 'out7'

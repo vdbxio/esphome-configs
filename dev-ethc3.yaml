@@ -1,0 +1,37 @@
+# A dev config to test W5500 external component
+
+esphome:
+  name: ethc3
+  friendly_name: ethC3
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+api:
+ota:
+  platform: esphome
+external_components:
+  - source: github://clomads/esphome-eth@w5500
+    components: [ ethernet ]
+    refresh: 0s
+
+ethernet:
+  type: W5500
+  cs_pin: 10
+  clk_pin: 4
+  mosi_pin: 6
+  miso_pin: 5
+  interrupt_pin: 1
+  clock_speed: 25
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 9
+      inverted: True
+    name: "Boot Button"
+

@@ -1,0 +1,9 @@
+# Dashboard Import Package 23.04-dev
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+
+
+dashboard_import:
+  package_import_url: ${package_git}
+  import_full_config: false

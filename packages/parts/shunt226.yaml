@@ -1,0 +1,18 @@
+
+# shunt226: !include  {file: "packages/parts/shunt226.yaml", vars: {address: 0x40, entid: shunt2}}
+
+
+sensor:
+  - platform: ina226
+    address: ${address}
+    shunt_resistance: 0.75 ohm
+    current:
+      name: "${friendly_name} Current"
+    power:
+      name: "${friendly_name} Power"
+    bus_voltage:
+      name: "${friendly_name} Bus Voltage"
+    shunt_voltage:
+      name: "${friendly_name} Shunt Voltage"
+    max_current: 100A
+    update_interval: 60s

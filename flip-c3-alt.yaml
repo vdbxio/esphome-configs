@@ -1,0 +1,195 @@
+# All Modules 23.04-dev
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# Use this as a baseline to connect VDBX Flip Modules
+# 
+
+substitutions:
+  name: "flip-c3-alt"
+  friendly_name: "FLIP-C3 ALT"
+  project_name: "vdbxio.FLIP-C3-alt"
+  project_version: "0.9.6"
+  ap_password: "GenericPassword"
+  package_git: "github://vdbxio/wiki/esphome/flip-c3-alt.yaml"
+  status_pin: "10"
+  rgb_pin: "8"
+
+# FLIP C3 Baseline Package 23.04-dev
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+
+dashboard_import:
+  package_import_url: ${package_git}
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: True
+  project:
+    name: "${project_name}"
+    version: "${project_version}"
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+i2c:
+  sda: 1
+  scl: 0
+  scan: True
+  id: bus_a
+  frequency: 100k
+    
+logger:
+api:
+ota:
+  platform: esphome
+time:
+  - platform: homeassistant
+
+   
+button:
+  - platform: restart
+    name: ${friendly_name} Restart
+  - platform: factory_reset
+    name: Restart with Factory Default Settings
+    disabled_by_default: True
+
+
+# WIFI
+wifi:
+  # ssid: initial_ap            # !secret wifi_ssid
+  # password: asdfasdfasdfasdf  # !secret wifi_password
+  ap:
+    password: ${ap_password}
+
+
+  # # default is 20, 17 is recommended.
+  # output_power: 17
+
+  # # using fast_connect as default since it is required for hidden networks.
+  # fast_connect: true
+
+  # forced_addr: 82
+  # global_addr: global_forced_addr
+
+  # ap:
+  #   ap_timeout: $wifi_ap_timeout
+
+captive_portal:
+
+web_server:
+  local: True
+
+sensor:
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 30s
+    entity_category: "diagnostic"
+  - platform: copy # Reports the WiFi signal strength in %
+    source_id: wifi_signal_db
+    name: "WiFi Signal Percent"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: "diagnostic"
+  - platform: internal_temperature
+    name: "ESP32-C3 Temperature"
+  - platform: adc
+    pin: 2
+    name: "ADC Pin 2"
+    accuracy_decimals: 5
+    update_interval: 1s
+    attenuation: auto
+    filters:
+    - multiply: 2.0
+  - platform: adc
+    pin: 2
+    name: "ADC Pin 2"
+    accuracy_decimals: 5
+    update_interval: 1s
+    attenuation: auto
+    filters:
+    - multiply: 2.0
+  - platform: adc
+    pin: 3
+    name: "ADC Pin 3"
+    accuracy_decimals: 5
+    update_interval: 1s
+    attenuation: auto
+    filters:
+    - multiply: 2.0
+
+
+wled:
+
+light:
+  - platform: status_led
+    name: "Status LED"
+    pin: ${status_pin}
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: ${rgb_pin}
+    restore_mode: RESTORE_AND_OFF
+    num_leds: 1
+    name: "RGB LEDs"
+    effects:
+      - pulse:
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 0.5s
+          update_interval: 0.5s
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 2s
+          update_interval: 2s
+      - strobe:
+      - strobe:
+          name: Strobe Custom
+          colors:
+            - state: true
+              brightness: 100%
+              red: 100%
+              green: 90%
+              blue: 0%
+              duration: 500ms
+            - state: false
+              duration: 250ms
+            - state: true
+              brightness: 100%
+              red: 0%
+              green: 100%
+              blue: 0%
+              duration: 500ms
+      - flicker:
+      - addressable_rainbow:
+      - addressable_rainbow:
+          name: "Rainbow Slow"
+          speed: 1
+          width: 1
+      - addressable_color_wipe:
+      - addressable_color_wipe:
+          name: Color Wipe Custom
+          colors:
+            - red: 100%
+              green: 100%
+              blue: 100%
+              num_leds: 1
+            - red: 0%
+              green: 0%
+              blue: 0%
+              num_leds: 1
+          add_led_interval: 100ms
+          reverse: false
+      - wled:
+          # port: 21324
+
+
+
+
+

@@ -1,0 +1,202 @@
+# INA2XX 24.06-dev for PwrTool 500
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# 
+# ina2xx: !include  {file: "packages/parts/ina2xx.yaml", vars: {address: 0x40}}
+
+
+globals:
+  - id: offset_power
+    type: float
+    restore_value: yes
+    initial_value: '0.0'
+  - id: offset_current
+    type: float
+    restore_value: yes
+    initial_value: '0.0'
+
+
+esphome:
+  on_boot:
+  - priority: -200.0
+    then:
+      - sensor.template.publish:
+          id: offsetI_int
+          state: !lambda 'return id(offset_current);'
+      - sensor.template.publish:
+          id: offsetP_int
+          state: !lambda 'return id(offset_power);'
+
+# REMOVE THIS WHEN MERGED INTO ESPHOME MAIN 
+
+external_components:
+    # - source: github://latonita/esphome-ina228
+    #   components: [ina2xx_base, ina2xx_i2c]
+    - source: github://pr#6138
+      components: [ina2xx_base, ina2xx_i2c]
+      refresh: 0s
+
+
+
+
+
+switch:
+  - platform: template
+    name: "Invert"
+    id: invert
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    entity_category: config
+
+button:
+  - platform: template
+    name: Set Zero Offset
+    id: zero_offset
+    entity_category: config
+    icon: "mdi:circle"
+    on_press:
+      - logger.log: "Setting Offset"
+      - sensor.template.publish:
+          id: offsetI_int
+          state: !lambda 'return id(rawI).state;'
+      - sensor.template.publish:
+          id: offsetP_int
+          state: !lambda 'return id(rawP).state;'
+      - logger.log:
+          format: "Current - %.1f / Power - %.1f"
+          args: [ 'id(offset_current)', 'id(offset_power)' ]
+  - platform: template
+    name: Clear Zero Offset
+    id: clear_offset
+    entity_category: config
+    icon: "mdi:circle"
+    on_press:
+      - logger.log: "Clearing Offset"
+      - sensor.template.publish:
+          id: offsetI_int
+          state: 0
+      - sensor.template.publish:
+          id: offsetP_int
+          state: 0
+      - logger.log:
+          format: "Current - %.1f / Power - %.1f"
+          args: [ 'id(offset_current)', 'id(offset_power)' ]
+
+
+
+
+
+sensor:
+  - platform: ina2xx_i2c
+    id: ina23x
+    address: ${address} # default: 0x40
+    shunt_resistance: 0.00015 ohm
+    model: INA238
+    max_current: 500 A
+    adc_range: 0
+    adc_time: 4120 us
+    adc_averaging: 128
+    update_interval: 100ms
+    shunt_voltage:
+      name: "Voltage - Shunt"
+      device_class: "voltage"
+      unit_of_measurement: "mV"
+      accuracy_decimals: 3
+      disabled_by_default: True
+    bus_voltage:
+      name: "Voltage - Bus"
+      id: rawV
+      accuracy_decimals: 3
+    current:
+      name: "Current - Raw"
+      id: rawI
+      accuracy_decimals: 2
+      filters:
+      - lambda: !lambda |-
+          if (id(invert).state) return {x * -1};
+          return x;
+      on_value:
+       then:
+          - sensor.template.publish:
+              id: processedI
+              state: !lambda 'return (x - id(offsetI_int).state);'
+          - sensor.template.publish:
+              id: calculated_power
+              state: !lambda 'return (x - id(offsetI_int).state) * id(rawV).state;'
+
+    power:
+      name: "Power - Raw"
+      id: rawP
+      accuracy_decimals: 2
+      on_value:
+       then:
+          - sensor.template.publish:
+              id: processedP
+              state: !lambda 'return (x - id(offsetP_int).state);'
+    temperature:
+      name: "Temperature - Shunt"
+      accuracy_decimals: 2
+  - platform: total_daily_energy
+    name: "Energy - Daily"
+    power_id: calculated_power
+    accuracy_decimals: 2
+  - platform: template
+    id: processedI
+    name: "Current - Active"
+    accuracy_decimals: 2
+    device_class: "current"
+    unit_of_measurement: "A"
+  - platform: template
+    id: processedP
+    name: "Power - Active"
+    accuracy_decimals: 2
+    device_class: "power"
+    unit_of_measurement: "W"
+    filters:
+    - lambda: !lambda |-
+        if (id(rawI).state < 0.0) return x * -1;
+        return x;
+  - platform: template
+    id: calculated_power
+    name: "Power - Calculated"
+    accuracy_decimals: 2
+    device_class: "power"
+    unit_of_measurement: "W"
+  - platform: template
+    id: offsetI_int
+    name: "Current - Offset"
+    accuracy_decimals: 2
+    device_class: "current"
+    unit_of_measurement: "A"
+    entity_category: diagnostic
+    on_value:
+      - globals.set:
+          id: offset_current
+          value: !lambda 'return x;'
+  - platform: template
+    id: offsetP_int
+    name: "Power - Offset"
+    accuracy_decimals: 2
+    device_class: "power"
+    unit_of_measurement: "W"
+    entity_category: diagnostic
+    on_value:
+      - globals.set:
+          id: offset_power
+          value: !lambda 'return x;'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

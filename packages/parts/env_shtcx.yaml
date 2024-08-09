@@ -1,0 +1,14 @@
+# SHT C3/Cx 23.10 for PwrTool 500
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# 
+
+sensor:
+  - platform: shtcx
+    temperature:
+      name: "Temperature - Ambient"
+    humidity:
+      name: "Humidity - Ambient"
+    address: 0x70
+    update_interval: 1s

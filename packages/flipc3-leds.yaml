@@ -1,0 +1,70 @@
+# FLIP-C3 - LEDs Package 23.07-dev
+# This sets up the WS2812b and Status LED on the FLIP-C3
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+
+substitutions:
+  status_pin: "10"
+  rgb_pin: "8"
+
+wled:
+
+light:
+  - platform: status_led
+    name: "Status LED"
+    id: stats_led
+    pin: ${status_pin}
+  - platform: esp32_rmt_led_strip
+    id: onboard_rgb
+    rgb_order: GRB
+    rmt_channel: 0
+    chipset: ws2812    
+    pin: ${rgb_pin}
+    restore_mode: RESTORE_AND_OFF
+    num_leds: 1
+    name: "RGB LED"
+    effects:
+      - pulse:
+      - pulse:
+          name: "Chill Pulse"
+          transition_length: 2s
+          update_interval: 2s
+          min_brightness: 0%
+          max_brightness: 25%
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 2s
+          update_interval: 2s
+      - random:
+      - strobe:
+      - strobe:
+          name: Strobe Custom
+          colors:
+            - state: true
+              brightness: 100%
+              red: 100%
+              green: 90%
+              blue: 0%
+              duration: 500ms
+            - state: false
+              duration: 250ms
+            - state: true
+              brightness: 100%
+              red: 0%
+              green: 100%
+              blue: 0%
+              duration: 500ms
+      - flicker:
+      - addressable_rainbow:
+      - addressable_rainbow:
+          name: "Rainbow Slow"
+          speed: 1
+          width: 1
+      - addressable_color_wipe:
+      - addressable_color_wipe:
+          name: Color Wipe Fast
+          add_led_interval: 100ms
+          reverse: false
+      - wled:
+          # port: 21324

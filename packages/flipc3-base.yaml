@@ -1,0 +1,60 @@
+# FLIP C3 Baseline Package 23.04-dev
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+
+substitutions:
+  ap_password: "GenericPassword"
+  name: "flip-c3"
+  friendly_name: "FLIP-C3"
+  project_name: "vdbxio.Flip-C3"
+  project_version: "0.9.0"
+
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: True
+  project:
+    name: "${project_name}"
+    version: "${project_version}"
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+i2c:
+  sda: 1
+  scl: 0
+  scan: True
+  id: bus_a
+  frequency: 100k
+    
+logger:
+
+button:
+  - platform: restart
+    name: ${friendly_name} Restart
+  - platform: factory_reset
+    name: Restart with Factory Default Settings
+    disabled_by_default: True
+
+
+# # WIFI SHIT
+# wifi:
+#   ap:
+#     password: ${ap_password}
+
+# captive_portal:
+
+# web_server:
+#   local: True
+
+
+sensor:
+  - platform: internal_temperature
+    name: "FLIP-C3 Temperature"
+    update_interval: 10s
+
+    

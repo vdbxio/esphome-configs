@@ -1,0 +1,24 @@
+# All Modules 23.04-dev
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# Use this as a baseline to connect VDBX Flip Modules
+# 
+
+substitutions:
+  name: "name"
+  friendly_name: "Name"
+  project_name: "vdbxio.name"
+  project_version: "0.9.0"
+  package_git: "github://vdbxio/wiki/esphome/everything.yaml@main"
+
+packages:
+  flipc3: !include packages/flipc3-base.yaml
+  dash: !include packages/dash-import.yaml
+  uart: !include packages/flipc3-uart.yaml
+  wifi: !include packages/flipc3-wifi.yaml
+  shtc3: !include packages/parts/env_shtcx.yaml
+  switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}
+  shunt9611: !include  {file: "packages/parts/shunt9611.yaml", vars: {address: 0x70, entid: shunt1 , interval: 1s }}
+  hoursCounter: !include  {file: "packages/parts/hours-count.yaml", vars: { entid: counter1 }}
+  shunt226: !include  {file: "packages/parts/shunt226.yaml", vars: {address: 0x40, entid: shunt2}}

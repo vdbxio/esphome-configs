@@ -1,0 +1,4 @@
+  platform: template
+  name: "Switch ${num}"
+  id: ${entid}_switch_${num}_state
+  icon: mdi:toggle-switch-variant-off

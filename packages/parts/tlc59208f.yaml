@@ -1,0 +1,130 @@
+# INA2XX 24.06-dev for PwrTool 500
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# 
+#   tlc59208f: !include  {file: "packages/parts/tlc59208f.yaml", vars: {address: 0x48, entid: pwm01 }}
+
+
+
+# Minimalistic configuration entry, single chip, single output
+tlc59208f:
+  address: ${address}
+  id: ${entid}
+
+
+# Individual outputs
+output:
+  - platform: tlc59208f
+    tlc59208f_id: '${entid}'
+    channel: 0
+    inverted: True
+    id: ${entid}_out0
+    # min_power: 0.4
+    # zero_means_zero: True
+  - platform: tlc59208f
+    tlc59208f_id: '${entid}'
+    channel: 1
+    inverted: True
+    id: ${entid}_out1
+    # min_power: 0.4
+    # zero_means_zero: True
+  - platform: tlc59208f
+    tlc59208f_id: '${entid}'
+    channel: 2
+    inverted: True
+    id: ${entid}_out2
+  - platform: tlc59208f
+    tlc59208f_id: '${entid}'
+    channel: 3
+    inverted: True
+    id: ${entid}_out3
+  - platform: tlc59208f
+    tlc59208f_id: '${entid}'
+    channel: 4
+    inverted: True
+    id: ${entid}_out4
+  - platform: tlc59208f
+    tlc59208f_id: '${entid}'
+    channel: 5
+    inverted: True
+    id: ${entid}_out5
+  - platform: tlc59208f
+    tlc59208f_id: '${entid}'
+    channel: 6
+    inverted: True
+    id: ${entid}_out6
+  - platform: tlc59208f
+    tlc59208f_id: '${entid}'
+    channel: 7
+    inverted: True
+    id: ${entid}_out7
+
+
+light:
+  - platform: monochromatic
+    name: "MOSFET 0"
+    output: ${entid}_out0
+    disabled_by_default: True
+    gamma_correct: 0
+  - platform: monochromatic
+    name: "MOSFET 1"
+    output: ${entid}_out1
+    disabled_by_default: True
+    gamma_correct: 0
+  - platform: monochromatic
+    name: "MOSFET 2"
+    output: ${entid}_out2
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 3"
+    output: ${entid}_out3
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 4"
+    output: ${entid}_out4
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 5"
+    output: ${entid}_out5
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 6"
+    output: ${entid}_out6
+    gamma_correct: 0
+    disabled_by_default: True
+  - platform: monochromatic
+    name: "MOSFET 7"
+    output: ${entid}_out7
+    gamma_correct: 0
+    disabled_by_default: True
+
+switch:
+  - platform: output
+    name: "Switch 0"
+    output: '${entid}_out0'
+  - platform: output
+    name: "Switch 1"
+    output: '${entid}_out1'
+  - platform: output
+    name: "Switch 2"
+    output: '${entid}_out2'
+  - platform: output
+    name: "Switch 3"
+    output: '${entid}_out3'
+  - platform: output
+    name: "Switch 4"
+    output: '${entid}_out4'
+  - platform: output
+    name: "Switch 5"
+    output: '${entid}_out5'
+  - platform: output
+    name: "Switch 6"
+    output: '${entid}_out6'
+  - platform: output
+    name: "Switch 7"
+    output: '${entid}_out7'

@@ -1,0 +1,17 @@
+{
+  "name": "WLED for Flip-C3",
+  "version": "0.14.0-b5",
+  "home_assistant_domain": "esphome",
+  "funding_url": "https://patreon.com/clomads",
+  "new_install_prompt_erase": false,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C3",
+      "parts": [
+        { "path": "esp32-c3_bootloader_v2.bin", "offset": 0 },
+        { "path": "WLED_0.14.0-b5_ESP32-C3.bin", "offset": 65536 }
+      ]
+    }
+  ]
+}
+

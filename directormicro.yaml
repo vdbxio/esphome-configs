@@ -1,0 +1,26 @@
+# PwrTool Director Micro 24.06-dev
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+#
+# tlc59208f version of Director Micro
+# 
+
+substitutions:
+  name: "director-micro"
+  friendly_name: "PwrTool Director Micro"
+  project_name: "vdbxio.DIRECTOR-MICRO"
+  project_version: "1.1"
+  package_git: "github://vdbxio/wiki/esphome/directormicro.yaml"
+  
+
+packages:
+  flipc3: !include packages/flipc3-base.yaml
+  dash: !include packages/dash-import.yaml
+  wifi: !include packages/flipc3-wifi.yaml
+  leds: !include packages/flipc3-leds.yaml
+# Copy any of the following into your yaml preceded by github://vdbxio/wiki/esphome/
+  qaset: !include packages/flipc3-qa.yaml
+  uart: !include packages/flipc3-uart.yaml
+  # hoursCounter: !include  {file: "packages/parts/hours-count.yaml", vars: { entid: counter1 }}
+  tlc59208f: !include  {file: "packages/parts/tlc59208f.yaml", vars: {address: 0x48, entid: pwm01 }}

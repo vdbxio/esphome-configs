@@ -1,0 +1,32 @@
+esphome:
+  name: prototype-main
+  friendly_name: prototype-main
+  name_add_mac_suffix: True
+  project:
+    name: "vdbxio.prototype"
+    version: "0.9.1"
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+dashboard_import:
+  package_import_url: github://vdbxio/wiki/esphome/flip-c3.yaml
+
+# Enable logging
+logger:
+# Enable Home Assistant API
+api:
+ota:
+  platform: esphome
+wifi:
+  ssid: init_ssid
+  password: whattheactualheckyall
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    password: "GenericPassword"
+
+captive_portal:
+    

@@ -1,0 +1,120 @@
+blueprint:
+  name: Bi-Directional Switch
+  description: |
+    VDBX FLIP Shift - 4x Bidrectional Switch Panel presents four Text Sensors, import this into Home Assistant and create a new automation for each switch.
+    Select orientation in the device preferences under Integrations > ESPHome > Your Device name >(1 device)
+  domain: automation
+  input:
+    text_sensor_id:
+      name: Text Sensor for Switch
+      description: The text sensor used to trigger the automation
+      selector:
+        entity:
+          filter:
+            - integration: esphome
+              domain: sensor
+              device_class: enum
+    up_act:
+      name: Up/Right Single action
+      description: The action(s) to launch for a single up or right click
+      default: []
+      selector:
+        action: {}
+    down_act:
+      name: Down/Right Single click action
+      description: The action(s) to launch for a single down or left click
+      default: []
+      selector:
+        action: {}
+    dbl_up_act:
+      name: Double Up/Right action
+      description: The action(s) to launch for a double up or double right click
+      default: []
+      selector:
+        action: {}
+    dbl_down_act:
+      name: Double Down/Left click action
+      description: The action(s) to launch for a double down or double left click
+      default: []
+      selector:
+        action: {}
+    hold_up_act:
+      name: Hold Up/Right action
+      description: The action(s) to launch for a hold up or a hold right
+      default: []
+      selector:
+        action: {}
+    hold_down_act:
+      name: Hold Down/Left action
+      description: The action(s) to launch for a hold down or a hold left
+      default: []
+      selector:
+        action: {}
+    
+    
+  #source_url: https://gist.github.com/agdamsbo/f49277bd8dd9bbada055c49600bea9e2
+trigger:
+- platform: state
+  entity_id: !input 'text_sensor_id'
+action:
+- choose:
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Up'
+    sequence: !input 'up_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Right'
+    sequence: !input 'up_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Down'
+    sequence: !input 'down_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Left'
+    sequence: !input 'up_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Double Up'
+    sequence: !input 'dbl_up_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Double Right'
+    sequence: !input 'dbl_up_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Double Down'
+    sequence: !input 'dbl_down_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Double Left'
+    sequence: !input 'dbl_down_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Hold Up'
+    sequence: !input 'hold_up_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Hold Right'
+    sequence: !input 'hold_up_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Hold Down'
+    sequence: !input 'hold_down_act'
+  - conditions:
+    - condition: state
+      entity_id: !input 'text_sensor_id'
+      state: 'Hold Left'
+    sequence: !input 'hold_down_act'

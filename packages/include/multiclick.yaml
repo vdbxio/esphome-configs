@@ -1,0 +1,96 @@
+# 
+#
+# Multiclick Binary Sensor Include
+# -------Example Use -----
+# binary_sensor: 
+#   -  !include {file: "include/multiclick.yaml", vars: {num: 1, ltr: a, pin: 0 }}
+#
+#
+
+
+  platform: gpio
+  name: "sw${num}${ltr}"
+  id: sw${num}${ltr}
+  internal: True
+  pin:
+    pcf8574: ${entid}
+    number: ${pin}
+    mode: INPUT
+    inverted: true
+  filters:
+    - delayed_on: 10ms
+    - delayed_off: 10ms
+  on_multi_click:
+    #Double Click
+    - timing:
+        - ON for at most 500ms
+        - OFF for at most 300ms
+        - ON for at most 500ms
+        - OFF for at least 100ms
+      then:
+        - select.set:
+            id: ${entid}_switch_${num}
+            option: !lambda 'return "Double " + id(${entid}_rot_txt_${ltr}).state;'
+        - text_sensor.template.publish:
+            id: ${entid}_switch_${num}_state
+            state: !lambda 'return "Double " + id(${entid}_rot_txt_${ltr}).state;' 
+        - delay: 0.5s
+        - select.set:
+            id: ${entid}_switch_${num}
+            option: ${idle_verb}
+        - text_sensor.template.publish:
+            id: ${entid}_switch_${num}_state
+            state: ${idle_verb}
+    #Single Click
+    - timing:
+        - ON for at most 500ms
+        - OFF for at least 150ms
+      then:
+        - select.set:
+            id: ${entid}_switch_${num}
+            option: !lambda 'return id(${entid}_rot_txt_${ltr}).state;' 
+        - text_sensor.template.publish:
+            id: ${entid}_switch_${num}_state
+            state: !lambda 'return id(${entid}_rot_txt_${ltr}).state;' 
+        - delay: 0.5s
+        - select.set:
+            id: ${entid}_switch_${num}
+            option: ${idle_verb}
+        - text_sensor.template.publish:
+            id: ${entid}_switch_${num}_state
+            state: ${idle_verb}
+    #Hold
+    - timing:
+        - ON for at least 750ms
+      then:
+        - while:
+            condition:
+              binary_sensor.is_on: sw${num}${ltr}
+            then:
+              - select.set:
+                  id: ${entid}_switch_${num}
+                  option: !lambda 'return "Hold " + id(${entid}_rot_txt_${ltr}).state;' 
+              - text_sensor.template.publish:
+                  id: ${entid}_switch_${num}_state
+                  state: !lambda 'return "Hold " + id(${entid}_rot_txt_${ltr}).state;' 
+              - delay: 0.5s
+    #Release
+    - timing:
+        - ON for at least 1.5s
+        - OFF for at least 0.5s
+      then:
+        - lambda: |-
+            id(${entid}_counter) = 0;
+        - select.set:
+            id: ${entid}_switch_${num}
+            option: !lambda 'return "Release " + id(${entid}_rot_txt_${ltr}).state;' 
+        - text_sensor.template.publish:
+            id: ${entid}_switch_${num}_state
+            state: !lambda 'return "Release " + id(${entid}_rot_txt_${ltr}).state;' 
+        - delay: 0.5s
+        - select.set:
+            id: ${entid}_switch_${num}
+            option: ${idle_verb}
+        - text_sensor.template.publish:
+            id: ${entid}_switch_${num}_state
+            state: ${idle_verb}

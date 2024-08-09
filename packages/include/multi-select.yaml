@@ -1,0 +1,23 @@
+  platform: template
+  name: "Switch ${num}"
+  id: ${entid}_switch_${num}
+  optimistic: true
+  options:
+    - ${idle_verb}
+    - Up
+    - Down
+    - Left
+    - Right
+    - Double Up
+    - Double Down
+    - Double Left
+    - Double Right
+    - Hold Up
+    - Hold Down
+    - Hold Left
+    - Hold Right
+    - Release Up
+    - Release Down
+    - Release Left
+    - Release Right
+  initial_option: ${idle_verb}

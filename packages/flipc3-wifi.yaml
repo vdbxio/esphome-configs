@@ -1,0 +1,38 @@
+
+substitutions:
+  ap_password: "GenericPassword"
+
+
+api:
+ota:
+  platform: esphome
+# WIFI Stuff
+wifi:
+  ap:
+    password: ${ap_password}
+
+captive_portal:
+
+bluetooth_proxy:
+web_server:
+  local: True
+
+time:
+  - platform: homeassistant
+
+esp32_improv:
+  authorizer: none
+
+sensor:
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 30s
+    entity_category: "diagnostic"
+  - platform: copy # Reports the WiFi signal strength in %
+    source_id: wifi_signal_db
+    name: "WiFi Signal Percent"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: "diagnostic"

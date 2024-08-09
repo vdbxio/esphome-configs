@@ -1,0 +1,82 @@
+substitutions:
+  idle_verb: "Idle"
+
+esphome:
+  on_boot:
+    then:
+      - text_sensor.template.publish:
+          id: ${entid}_switch_1_state
+          state: ${idle_verb}
+
+globals:
+  - id: ${entid}_counter
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+pcf8574:
+  - id: ${entid}
+    address: ${address}
+    pcf8575: False
+
+binary_sensor: 
+  -  !include {file: "include/multiclick.yaml", vars: {num: 1, ltr: a, pin: 0 }}
+  -  !include {file: "include/multiclick.yaml", vars: {num: 1, ltr: b, pin: 1 }}
+  -  !include {file: "include/multiclick.yaml", vars: {num: 2, ltr: a, pin: 2 }}
+  -  !include {file: "include/multiclick.yaml", vars: {num: 2, ltr: b, pin: 3 }}
+  -  !include {file: "include/multiclick.yaml", vars: {num: 3, ltr: a, pin: 4 }}
+  -  !include {file: "include/multiclick.yaml", vars: {num: 3, ltr: b, pin: 5 }}
+  -  !include {file: "include/multiclick.yaml", vars: {num: 4, ltr: a, pin: 6 }}
+  -  !include {file: "include/multiclick.yaml", vars: {num: 4, ltr: b, pin: 7 }}
+
+
+
+text_sensor:
+  -  !include {file: "include/multi-text.yaml", vars: {num: 1 }}
+  -  !include {file: "include/multi-text.yaml", vars: {num: 2 }}
+  -  !include {file: "include/multi-text.yaml", vars: {num: 3 }}
+  -  !include {file: "include/multi-text.yaml", vars: {num: 4 }}
+  - platform: template
+    id: ${entid}_rot_txt_a
+    filters:
+      - map:
+        - 0 -> Down
+        - 90 -> Left
+        - 180 -> Up
+        - 270 -> Right
+  - platform: template
+    id: ${entid}_rot_txt_b
+    filters:
+      - map:
+        - 0 -> Up
+        - 90 -> Right
+        - 180 -> Down
+        - 270 -> Left  
+  
+
+select:
+  -  !include {file: "include/multi-select.yaml", vars: {num: 1 }}
+  -  !include {file: "include/multi-select.yaml", vars: {num: 2 }}
+  -  !include {file: "include/multi-select.yaml", vars: {num: 3 }}
+  -  !include {file: "include/multi-select.yaml", vars: {num: 4 }}
+  - platform: template
+    id: rotation_select
+    name: "Rotation"
+    optimistic: true
+    icon: mdi:phone-rotate-landscape
+    restore_value: True
+    entity_category: config
+    options:
+      - '0'
+      - '90'
+      - '180'
+      - '270'
+    initial_option: '0'
+    on_value:
+      then:
+        - text_sensor.template.publish:
+            id: ${entid}_rot_txt_a
+            state: !lambda 'return x;'
+        - text_sensor.template.publish:
+            id: ${entid}_rot_txt_b
+            state: !lambda 'return x;' 

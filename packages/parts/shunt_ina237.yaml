@@ -1,0 +1,76 @@
+# INA237 23.10-dev for PwrTool 500
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# 
+# shunt9611: !include  {file: "packages/parts/shunt9611.yaml", vars: {address: 0x70, entid: shunt1 , interval: 1s}}
+
+sensor:
+  - platform: ina237
+    address: 0x40
+    shunt_resistance: 0.000075 ohm
+    temperature:
+      name: INA237 Temperature
+      # filters:
+      #   - sliding_window_moving_average:
+      #       window_size: 10
+      #       send_every: 10
+    current:
+      name: INA237 Current
+      filters:
+        - multiply: 100
+    power:
+      name: INA237 Power Raw
+      id: rawpower
+      on_value:
+        then:
+          - sensor.template.publish:
+              id: powerquant
+              state: !lambda 'return x;'
+          - sensor.template.publish:
+              id: powavg
+              state: !lambda 'return x;'
+      filters:
+        - multiply: 100
+        - offset: -11   
+    bus_voltage:
+      name: INA237 Bus Voltage
+    shunt_voltage:
+      name: INA237 Shunt Voltage
+      accuracy_decimals: 6
+    max_voltage: 60.0V
+    max_current: 500A
+    gain: 1x
+    update_interval: 100ms
+  - platform: template
+    name: "Power Quantile"
+    id: powerquant
+    device_class: "power"
+    unit_of_measurement: "W"
+
+    filters:
+      - quantile:
+          window_size: 7
+          send_every: 4
+          send_first_at: 3
+          quantile: .3
+  - platform: template
+    name: "Power Average"
+    id: powavg
+    device_class: "power"
+    unit_of_measurement: "W"
+    filters:
+      - sliding_window_moving_average:
+          window_size: 10
+          send_every: 10
+
+  - platform: total_daily_energy
+    name: "Cold Side Daily Energy"
+    power_id: rawpower
+  - platform: total_daily_energy
+    name: "Cold Side Daily Energy Quantile"
+    power_id: powerquant
+  - platform: total_daily_energy
+    name: "Cold Side Daily Energy Average"
+    power_id: powavg
+

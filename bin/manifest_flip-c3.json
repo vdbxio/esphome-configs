@@ -1,0 +1,16 @@
+{
+  "name": "Flip-C3",
+  "version": "2023.09",
+  "home_assistant_domain": "esphome",
+  "funding_url": "https://patreon.com/clomads",
+  "new_install_prompt_erase": false,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C3",
+      "parts": [
+        { "path": "flip-c3-factory.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
+
