@@ -8,7 +8,7 @@ substitutions:
   friendly_name: "Flip Panel"
   project_name: "vdbxio.flip panel"
   project_version: "0.9.0"
-  package_git: "github://vdbxio/wiki/esphome/daly-bms.yaml@main"
+  package_git: "github://vdbxio/esphome-configs/daly-bms.yaml@main"
 
 packages:
   flipc3: !include packages/flipc3-base.yaml
@@ -18,6 +18,8 @@ packages:
   # switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}
   # hoursCounter: !include  {file: "packages/parts/hours-count.yaml", vars: { entid: counter1 }}
 
+
+# TODO: separate code component
 daly_bms:
   update_interval: 5s
 

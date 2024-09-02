@@ -1,4 +1,4 @@
-# FLIP_C3 23.10-dev
+# FLIP_C3 24.09
 # Voidbox Industries & Chloe Madison
 # VDBX.io / @clomads
 # CC-BY-SA 4.0
@@ -9,8 +9,8 @@ substitutions:
   name: "flip-c3"
   friendly_name: "FLIP-C3"
   project_name: "vdbxio.FLIP-C3"
-  project_version: "1.0.3"
-  package_git: "github://vdbxio/wiki/esphome/flip-c3.yaml"
+  project_version: "1.1"
+  package_git: "github://vdbxio/esphome-configs/flip-c3.yaml"
   
 
 packages:
@@ -21,4 +21,4 @@ packages:
 # Copy any of the following into your yaml preceded by github://vdbxio/wiki/esphome/
 #  qaset: !include packages/flipc3-qa.yaml
 #  uart: !include packages/flipc3-uart.yaml
-  hoursCounter: !include  {file: "packages/parts/hours-count.yaml", vars: { entid: counter1 }}
+  hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
