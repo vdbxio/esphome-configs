@@ -18,7 +18,7 @@ packages:
   dash: !include packages/dash-import.yaml
   wifi: !include packages/flipc3-wifi.yaml
   leds: !include packages/flipc3-leds.yaml
-# Copy any of the following into your yaml preceded by github://vdbxio/wiki/esphome/
+# Copy any of the following into your yaml preceded by github://vdbxio/esphome-configs/
 #  qaset: !include packages/flipc3-qa.yaml
 #  uart: !include packages/flipc3-uart.yaml
   hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
