@@ -98,6 +98,11 @@ sensor:
     adc_time: 4120 us
     adc_averaging: 128
     update_interval: 100ms
+    # For 228/229:
+    # energy: "Energy - Raw"
+    # energy_joules: "Energy Joules - Raw"
+    # charge: "Charge - Raw"
+    # charge_coulombs: "Charge Coul - Raw"
     shunt_voltage:
       name: "Voltage - Shunt"
       device_class: "voltage"
@@ -171,6 +176,9 @@ sensor:
     unit_of_measurement: "A"
     entity_category: diagnostic
     on_value:
+      - logger.log:
+          format: "Current Offset set to %.1f"
+          args: [ 'id(offsetI_int).state' ]
       - globals.set:
           id: offset_current
           value: !lambda 'return x;'
@@ -182,6 +190,9 @@ sensor:
     unit_of_measurement: "W"
     entity_category: diagnostic
     on_value:
+      - logger.log:
+          format: "Power Offset set to %.1f"
+          args: [ 'id(offsetP_int).state' ]
       - globals.set:
           id: offset_power
           value: !lambda 'return x;'
