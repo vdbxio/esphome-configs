@@ -26,14 +26,26 @@ packages:
   # hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
 
 
-# output:
-#   - platform: ledc
-#     pin: 6
-#     inverted: False
-#     id: gpio_6
+# TODO
+# Tie button to switch or dimmable w/ config option
+# State of charge calculation
+# ESPNow wireless display
 
-# fan:
-#   - platform: speed
-#     output: gpio_6
-#     name: "PwrTool Fan"
+output:
+  - platform: ledc
+    id: gpio_7
+    pin: 
+      number: 7
+      inverted: False
+      # allow_other_uses: true
+      
+light:
+  - platform: monochromatic
+    name: "PwrTool MOS Dimmable"
+    disabled_by_default: True
+    output: gpio_7
 
+switch:
+  - platform: output
+    name: "PwrTool MOS Switch"
+    output: gpio_7
