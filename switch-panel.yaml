@@ -9,10 +9,14 @@ substitutions:
   project_name: "vdbxio.flip panel"
   project_version: "0.9.0"
   idle_verb: "Idle"
-  package_git: "github://vdbxio/wiki/esphome/switch-panel.yaml"
+  package_git: "github://vdbxio/esphome-configs/switch-panel.yaml"
 
 packages:
   flipc3: !include packages/flipc3-base.yaml
   wifi: !include packages/flipc3-wifi.yaml
   dash: !include packages/dash-import.yaml
-  switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}
+  leds: !include packages/flipc3-leds.yaml
+#  Copy any of the following into your yaml preceded by github://vdbxio/esphome-configs/
+  qaset: !include packages/flipc3-qa.yaml
+#  uart: !include packages/flipc3-uart.yaml
+  switchset: !include  {file: "packages/switchset.yaml", vars: {address: 0x20, entid: swset1 }}

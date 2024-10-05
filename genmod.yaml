@@ -9,13 +9,13 @@ substitutions:
   friendly_name: "Genmod"
   project_name: "vdbxio.genmod"
   project_version: "0.5.0"
-  package_git: "github://vdbxio/wiki/esphome/genmod.yaml@main"
+  package_git: "github://vdbxio/esphome-configs/genmod.yaml@main"
 
 packages:
   flipc3: !include packages/flipc3-base.yaml
   wifi: !include packages/flipc3-wifi.yaml
   dash: !include packages/dash-import.yaml
-  hoursCounter: !include  {file: "packages/parts/hours-count.yaml", vars: { entid: counter1 }}
+  hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
   # switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}
 
 

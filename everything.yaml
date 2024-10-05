@@ -10,7 +10,7 @@ substitutions:
   friendly_name: "Name"
   project_name: "vdbxio.name"
   project_version: "0.9.0"
-  package_git: "github://vdbxio/wiki/esphome/everything.yaml@main"
+  package_git: "github://vdbxio/esphome-configs/everything.yaml@main"
 
 packages:
   flipc3: !include packages/flipc3-base.yaml
@@ -20,5 +20,5 @@ packages:
   shtc3: !include packages/parts/env_shtcx.yaml
   switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}
   shunt9611: !include  {file: "packages/parts/shunt9611.yaml", vars: {address: 0x70, entid: shunt1 , interval: 1s }}
-  hoursCounter: !include  {file: "packages/parts/hours-count.yaml", vars: { entid: counter1 }}
+  hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
   shunt226: !include  {file: "packages/parts/shunt226.yaml", vars: {address: 0x40, entid: shunt2}}

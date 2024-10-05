@@ -1,3 +1,4 @@
+# A base YAML config for FLIP_C3 based boards
 esphome:
   name: prototype-main
   friendly_name: prototype-main
@@ -12,7 +13,7 @@ esp32:
     type: arduino
 
 dashboard_import:
-  package_import_url: github://vdbxio/wiki/esphome/flip-c3.yaml
+  package_import_url: github://vdbxio/esphome-configs/flip-c3.yaml
 
 # Enable logging
 logger:
