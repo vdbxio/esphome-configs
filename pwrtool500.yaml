@@ -26,14 +26,14 @@ packages:
   # hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
 
 
-output:
-  - platform: ledc
-    pin: 6
-    inverted: False
-    id: gpio_6
+# output:
+#   - platform: ledc
+#     pin: 6
+#     inverted: False
+#     id: gpio_6
 
-fan:
-  - platform: speed
-    output: gpio_6
-    name: "PwrTool Fan"
+# fan:
+#   - platform: speed
+#     output: gpio_6
+#     name: "PwrTool Fan"
 
