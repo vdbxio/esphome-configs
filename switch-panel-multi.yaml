@@ -20,4 +20,4 @@ packages:
   qaset: !include packages/flipc3-qa.yaml
 #  uart: !include packages/flipc3-uart.yaml
   switchset: !include  {file: "packages/switchset.yaml", vars: {address: 0x20, entid: swset1 }}
-  switchset: !include  {file: "packages/switchset.yaml", vars: {address: 0x21, entid: swset2 }}
+  switchset2: !include  {file: "packages/switchset.yaml", vars: {address: 0x21, entid: swset2 }}
