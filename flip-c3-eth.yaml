@@ -1,0 +1,25 @@
+# FLIP_C3 24.09
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# Baseline ESPHome YAML for FLIP_C3
+# 
+
+substitutions:
+  name: "flip-c3"
+  friendly_name: "FLIP-C3"
+  project_name: "vdbxio.FLIP-C3"
+  project_version: "1.1"
+  package_git: "github://vdbxio/esphome-configs/flip-c3.yaml"
+  
+
+packages:
+  flipc3: !include packages/flipc3-base.yaml
+  dash: !include packages/dash-import.yaml
+  # wifi: !include packages/flipc3-wifi.yaml
+  eth: !include packages/flipc3-eth5500.yaml
+  leds: !include packages/flipc3-leds.yaml
+# Copy any of the following into your yaml preceded by github://vdbxio/esphome-configs/
+  qaset: !include packages/flipc3-qa.yaml
+#  uart: !include packages/flipc3-uart.yaml
+  hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}

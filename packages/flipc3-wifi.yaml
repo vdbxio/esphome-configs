@@ -14,6 +14,9 @@ wifi:
 captive_portal:
 
 bluetooth_proxy:
+
+improv_serial:
+
 web_server:
   local: True
 

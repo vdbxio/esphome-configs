@@ -1,0 +1,24 @@
+
+api:
+ota:
+  platform: esphome
+
+
+bluetooth_proxy:
+
+
+web_server:
+  local: True
+
+time:
+  - platform: homeassistant
+
+
+ethernet:
+  type: W5500
+  clk_pin: 0
+  mosi_pin: 1
+  miso_pin: 7
+  cs_pin: 5
+  interrupt_pin: 4
+  reset_pin: 6
