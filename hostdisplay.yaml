@@ -1,0 +1,813 @@
+substitutions:
+  # name: esphome-web-36a50c
+  # friendly_name: WT32 SC01 Plus - LVGL
+  main_gague_w: "680"
+
+esphome:
+  name: sdl-testnan
+  friendly_name: "SDL Dash Test"
+
+host:
+  mac_address: "06:35:69:ab:f6:79"
+
+display:
+  - platform: sdl
+    id: sdldisp
+    auto_clear_enabled: false
+    # show_test_card: true
+    dimensions:
+      width: 1920
+      height: 720
+
+# Example configuration entry
+touchscreen:
+  platform: sdl
+  id: sdltouch
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+color:
+  - id: vyellow
+    hex: FF9D47
+  - id: vblue
+    hex: 4070A0
+  - id: vgreen
+    hex: 3FA242
+  - id: vred
+    hex: BA2612
+  - id: vpink
+    hex: E000E0
+  - id: vgray
+    hex: 520052
+  - id: vgray900
+    hex: '212121'
+  - id: vgray800
+    hex: '414141'  
+  - id: vwhite
+    hex: FFFFFF
+  - id: vblack
+    hex: '000000'
+  
+font:
+  - file: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
+    id: mdicons
+    size: 60
+    bpp: 4
+    glyphs: [
+      "\U000F0C4C", #car-light-high
+      "\U000F0734", #arrow-right-bold
+      "\U000F0731", #arrow-left-bold
+      "\U000F01FB", #engine-outline
+      "\U000F0C47", #car-brake-abs
+      "\U000F0D5F", #car-brake-parking
+      "\U000F1909", #car-brake-fluid
+      "\U000F190B", #car-brake-temperature
+      "\U000F010C", #car-battery
+      "\U000F0298", #gas-station   "\U000
+      "\U000F03C8", #coolant-temperature
+      "\U000F0FF8", #oil-temperature
+      "\U000F1019", #car-coolant-level
+
+      ]
+  - file:
+      type: gfonts
+      family: Material Symbols Outlined
+      weight: 300
+    id: symbols
+    size: 60
+    bpp: 4
+    glyphs: [
+      "\U0000f168", #Mode Fan \U0000
+      "\U0000ec17", #Fan off
+      "\U0000f16a", #Mode Head
+      "\U0000f166", #Mode Cool
+      "\U0000f6dd", #Readiness Score "\U0000",
+
+      ]
+      # e97a account tree
+      # e01d Equalizer
+      # e0ae flowsheet
+      # e0f0 kightbulb
+      # ec1c electric bolt
+      # 
+  - file: 
+      type: gfonts
+      family: League Spartan
+      weight: 600
+    id: spartan64
+    size: 100
+    bpp: 4
+  - file:
+      type: gfonts
+      family: League Spartan
+      weight: 600
+    id: spartan48
+    size: 48
+    bpp: 4
+  - file:
+      type: gfonts
+      family: League Spartan
+      weight: 600
+    id: spartan35
+    size: 35
+    bpp: 4
+  - file:
+      type: gfonts
+      family: League Gothic
+      weight: 400
+    id: gothic45
+    size: 45
+    bpp: 4
+  - file:
+      type: gfonts
+      family: DM Mono
+      weight: 300
+    id: mono30
+    size: 30
+    bpp: 4
+  - file:
+      type: gfonts
+      family: DM Mono
+      weight: 500
+    id: mono24
+    size: 24
+    bpp: 4
+
+lvgl:
+  #buffer_size: 25%
+  bg_color: vblack
+  bg_opa: COVER
+  theme: 
+    arc:
+      arc_color: vgray
+      arc_width: 10
+      indicator:
+        arc_width: 10
+      # bg_color: gray
+      # bg_opa: 50%
+    buttonmatrix:
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      pad_all: 0
+      items:
+        bg_opa: TRANSP
+        text_font: mdicons
+        text_color: vwhite
+        border_width: 2
+        radius: 0
+        border_side: BOTTOM
+        height: 100%
+        shadow_opa: TRANSP
+        pressed:
+          text_color: 0xFF00FF
+          border_color: 0xFF00FF
+        checked:
+          text_color: 0xFF00FF
+          bg_opa: TRANSP
+          border_color: 0xFF00FF
+    obj:
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      text_color: vwhite
+    label:
+      pad_all: 0
+      # USE FOR ALIGNMENT BOX DEBUGGING
+      # bg_color: 0xFFFFFF
+      # bg_opa: 25%
+    meter:
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      text_color: vwhite
+      text_font: spartan48
+  displays:
+    - sdldisp
+  touchscreens:
+    - sdltouch
+  widgets:
+    - obj: # a properly placed coontainer object for all these controls
+        align: LEFT_MID
+        width: ${main_gague_w}px
+        height: ${main_gague_w}px
+        widgets:
+          - label:
+              align_to: 
+                id: batt_arc
+                align: OUT_BOTTOM_Right
+                x: -40
+                y: -60
+              id: temp_icon
+              text_font: mdicons
+              text_color: vgray
+              text: "\U000F03C8"
+          - label:
+              align_to: 
+                id: fuel_arc
+                align: OUT_BOTTOM_LEFT
+                x: 40
+                y: -60
+              id: fuel_icon
+              text_font: mdicons
+              text_color: vgray
+              text: "\U000F0298"
+          - arc:
+              height: 100%
+              width: 100%
+              align: CENTER
+              id: house_batt_arc
+              start_angle: 30
+              end_angle: 70
+              value: 700
+              min_value: 0
+              max_value: 1000
+              adjustable: false
+              mode: REVERSE
+          - arc:
+              height: 94%
+              width: 94%
+              align: CENTER
+              id: batt_arc
+              start_angle: 30
+              end_angle: 70
+              value: 700
+              min_value: 0
+              max_value: 1000
+              adjustable: false
+              mode: REVERSE
+          - arc:
+              height: 94%
+              width: 94%
+              align: CENTER
+              id: fuel_arc
+              start_angle: 110
+              end_angle: 150
+              value: 700
+              min_value: 0
+              max_value: 1000
+              adjustable: false
+          - meter:
+              align: CENTER
+              width: 92%
+              height: 92%
+              scales:
+                - range_from: 4
+                  range_to: 0
+                  angle_range: 105
+                  rotation: 25
+                  ticks:
+                    count: 41
+                    length: 15
+                    width: 1
+                    major:
+                      stride: 10
+                      length: 30
+                      width: 5
+                      label_gap: 30
+                  indicators:
+                    - line:
+                        id: rpm_needle
+                        width: 6
+                        color: vblue
+                        r_mod: -50
+                        value: 2.5
+                    - tick_style:
+                        start_value: 0
+                        end_value: 90
+                        color_start: vred
+                        color_end: vblue
+                # - range_from: 0
+                #   range_to: 80
+                #   angle_range: 210
+                #   rotation: 130
+                #   ticks:
+                #     count: 17
+                #     length: 20
+                #     width: 2
+          - meter:
+              align: CENTER
+              width: 92%
+              height: 92%
+              scales:
+                - range_from: 0
+                  range_to: 80
+                  angle_range: 210
+                  rotation: 130
+                  ticks:
+                    count: 81
+                    length: 15
+                    width: 1
+                    major:
+                      stride: 10
+                      length: 30
+                      width: 5
+                      label_gap: 30
+                  indicators:
+                    - line:
+                        id: speed_needle
+                        width: 6
+                        color: vblue
+                        r_mod: -50
+                        value: 55
+                    - tick_style:
+                        start_value: 0
+                        end_value: 90
+                        color_start: vblue
+                        color_end: vred
+                - range_from: 0
+                  range_to: 80
+                  angle_range: 210
+                  rotation: 130
+                  ticks:
+                    count: 17
+                    length: 20
+                    width: 2
+          - obj: # to cover the middle part of meter indicator line
+              height: 25%
+              width: 25%
+              radius: 50%
+              align: CENTER
+              border_width: 0
+              bg_color: 0x111111
+              bg_opa: COVER
+              pad_all: 0
+              shadow_color: vpink
+              shadow_opa: 90%
+              shadow_spread: 70
+              shadow_width: 90
+          - obj: # to cover the middle part of meter indicator line
+              height: 35%
+              width: 35%
+              radius: 50%
+              align: CENTER
+              border_width: 0
+              bg_color: 0x111111
+              bg_opa: COVER
+              pad_all: 0
+              scrollbar_mode: "OFF"
+              shadow_color: 0x111111
+              shadow_opa: COVER
+              shadow_spread: 20
+              shadow_width: 20
+              widgets:
+                - obj: # a properly placed coontainer object for all these controls
+                    align: CENTER
+                    y: -10
+                    pad_all: 0
+                    text_color: vgray
+                    width: SIZE_CONTENT
+                    layout: # enable the FLEX layout for the children widgets
+                      type: FLEX
+                      flex_flow: ROW
+                      flex_align_main: CENTER
+                      # flex_align_cross: START
+                      pad_row: 0
+                      pad_column: 30px
+                    widgets:
+                      - label:
+                          id: left_turn
+                          text_font: mdicons
+                          text: "\U000F0731"
+                      - label:
+                          id: headlight_high
+                          text_font: mdicons
+                          text: "\U000F0C4C"
+                      - label:
+                          id: right_turn
+                          text_font: mdicons
+                          text: "\U000F0734"  
+                - label:
+                    align: CENTER
+                    y: 50
+                    id: gearmode
+                    text_font: spartan64
+                    text: "P" 
+                      
+            
+                
+                
+    - obj: # a properly placed coontainer object for all these controls
+        align: TOP_MID
+        y: 5
+        pad_all: 0
+        width: SIZE_CONTENT
+        layout: # enable the FLEX layout for the children widgets
+          type: FLEX
+          flex_flow: ROW
+          flex_align_main: CENTER
+          # flex_align_cross: START
+          pad_row: 0
+          pad_column: 30px
+        widgets:
+          # - label:
+          #     id: left_turn
+          #     text_font: mdicons
+          #     text: "\U000F0731"
+          # - label:
+          #     id: right_turn
+          #     text_font: mdicons
+          #     text: "\U000F0734"
+          - label:
+              id: brake_parking
+              text_font: mdicons
+              text: "\U000F0D5F"
+          - label:
+              id: check_engine
+              text_font: mdicons
+              text: "\U000F01FB"
+          # - label:
+          #     id: headlight_high
+          #     text_font: mdicons
+          #     text: "\U000F0C4C"
+          - label:
+              id: brake_abs
+              text_font: mdicons
+              text: "\U000F0C47"
+          - label:
+              id: car_temp
+              text_font: mdicons
+              text: "\U000F190B"
+          
+      #     "\U000F0C4C", #car-light-high
+      # "\U000F0734", #arrow-right-bold
+      # "\U000F0731", #arrow-left-bold
+      # "\U000F01FB", #engine-outline
+      # "\U000F0C47", #car-brake-abs
+      # "\U000F0D5F", #car-brake-parking
+      # "\U000F1909", #car-brake-fluid
+      # "\U000F190B", #car-brake-temperature
+      # "\U000F010C", #car-battery
+    - obj: # a properly placed coontainer object for all these controls
+        align: RIGHT_MID
+        width: ${main_gague_w}px
+        height: ${main_gague_w}px
+        widgets:
+          - label:
+              id: battery_label
+              align: TOP_MID
+              text: "-- v"
+              text_font: spartan48
+              y: 30%
+          - label:
+              id: solar_label
+              align: CENTER
+              text: "-- w"
+              text_font: mono30
+          - label:
+              id: solar_label_max
+              align: CENTER
+              text: "-- w"
+              text_font: mono30
+              hidden: true
+          - label:
+              id: loads_label
+              align: CENTER
+              y: 10%
+              text: "-- w"
+              text_font: mono24
+          - arc:
+              height: 98%
+              width: 98%
+              id: battery_arc
+              align: CENTER
+              value: 0
+              min_value: 200
+              max_value: 300
+              adjustable: false
+          - arc:
+              height: 80%
+              width: 80%
+              align: CENTER
+              id: solar_arc
+              end_angle: 260
+              value: 0
+              min_value: 0
+              max_value: 2000
+              adjustable: false
+          - arc:
+              height: 80%
+              width: 80%
+              align: CENTER
+              id: solar_arc_max
+              end_angle: 260
+              value: 0
+              min_value: 0
+              max_value: 2000
+              adjustable: false
+              hidden: true
+          - arc:
+              height: 80%
+              width: 80%
+              align: CENTER
+              id: load_arc
+              start_angle: 280
+              end_angle: 45
+              value: 0
+              mode: REVERSE
+              min_value: 0
+              max_value: 2000
+              adjustable: false
+    - obj: # a properly placed coontainer object for all these controls
+        align: TOP_LEFT
+        x: 5
+        y: 5
+        pad_all: 0
+        width: SIZE_CONTENT
+        layout: # enable the FLEX layout for the children widgets
+          type: FLEX
+          flex_flow: COLUMN
+          flex_align_main: START
+          flex_align_cross: START
+          pad_row: 0
+          pad_column: 0
+        widgets:
+          - label:
+              id: date_label
+              text: "--- -- ---"
+              text_font: mono24
+              text_opa: 90%
+          - label:
+              id: time_label
+              text: "00:00"
+              text_font: spartan48
+              text_opa: 90%
+          - label:
+              id: temp_label
+              text: "--°"
+              text_font: mono30
+              text_opa: 90%
+              pad_top: -5
+
+
+    # - tileview:
+    #     id: tileboi
+    #     # scrollbar_mode: active
+    #     bg_color: black
+    #     tiles:
+    #       - id: solar_data_page
+    #         # bg_color: gray
+    #         # bg_opa: 50%
+    #         row: 0
+    #         column: 0
+    #         dir: HOR
+    #         text_color: white
+    #         widgets:
+              
+    #           - buttonmatrix:
+    #               height: 60px
+    #               width: 100%
+    #               align: BOTTOM_MID
+    #               id: matrix_id
+    #               rows:
+    #                 - buttons:
+    #                   - id: button_1
+    #                     text: "\U000F0C4C"
+    #                     control:
+    #                       checkable: true
+    #                       # checked:
+    #                       #   text: "\U0000f168"
+    #                   - id: button_2
+    #                     text: "\U0000f168"
+    #                   - id: button_3
+    #                     text: "\U0000f16a"
+    #                     control:
+    #                       checkable: true
+    #                   - id: button_4
+    #                     text: "\U0000f166"
+    #                     control:
+    #                       checkable: true
+              
+
+        
+
+sensor:
+  - platform: homeassistant
+    id: battery_voltage
+    entity_id: sensor.battery_voltage
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: battery_label
+            text:
+              format: "%.1fv"
+              args:
+                - 'id(battery_voltage).state'
+        - lvgl.arc.update:
+            id: battery_arc
+            value: !lambda 'return int(id(battery_voltage).state * 10);'
+        - if:
+            condition: 
+              sensor.in_range:
+                id: battery_voltage
+                above: 27
+            then:
+              - logger.log: "ABOVE 27"
+              - lvgl.arc.update:
+                  id: battery_arc
+                  indicator:
+                    arc_color: vgreen
+              - lvgl.label.update:
+                  id: battery_label
+                  text_color: vgreen
+        - if:
+            condition: 
+              sensor.in_range:
+                id: battery_voltage
+                above: 25
+                below: 27
+            then:
+              - logger.log: "ABOVE 25"
+              - lvgl.arc.update:
+                  id: battery_arc
+                  indicator:
+                    arc_color: vyellow
+              - lvgl.label.update:
+                  id: battery_label
+                  text_color: vyellow
+        - if:
+            condition: 
+              sensor.in_range:
+                id: battery_voltage
+                below: 25
+            then:
+              - logger.log: "BELOW 25"
+              - lvgl.arc.update:
+                  id: battery_arc
+                  indicator:
+                    arc_color: vred
+              - lvgl.label.update:
+                  id: battery_label
+                  text_color: vred
+        
+
+  - platform: homeassistant
+    id: pv_array_power
+    entity_id: sensor.pv_array_input_power
+    on_value: 
+      then:
+        - lvgl.label.update:
+            id: solar_label
+            text:
+              format: "%dw"
+              args:
+                - 'int(id(pv_array_power).state)'
+        - lvgl.arc.update:
+            id: solar_arc
+            value: !lambda return int(id(pv_array_power).state);
+        - if:
+            condition: 
+              sensor.in_range:
+                id: pv_array_power
+                above: 10
+            then:
+              - logger.log: "SUN IS UP"
+    # on_value_range:
+    #   - above: 10.0
+    #     then:
+    #       - logger.log: "SUN IS UP"
+    #       - lvgl.widget.hide: [solar_label_max, solar_arc_max]
+    #       - lvgl.widget.show: [solar_label, solar_arc]
+    #   - below: 10.0
+    #     then:
+    #       - logger.log: "SUN IS DOWN"
+    #       - lvgl.widget.hide: [solar_label, solar_arc]
+    #       - lvgl.widget.show: [solar_label_max, solar_arc_max]
+      
+
+  - platform: homeassistant
+    id: solar_daily_max
+    entity_id: sensor.solar_daily_max
+    on_value: 
+      then:
+        - lvgl.label.update:
+              id: solar_label_max
+              text:
+                format: "%dw"
+                args:
+                  - 'int(id(solar_daily_max).state)'
+        - lvgl.arc.update:
+            id: solar_arc_max
+            value: !lambda return int(id(solar_daily_max).state);
+
+  - platform: homeassistant
+    id: combined_loads
+    entity_id: sensor.combined_loads
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: loads_label
+            text:
+              format: "%dw"
+              args:
+                - 'int(id(combined_loads).state)'
+        - lvgl.arc.update:
+            id: load_arc
+            value: !lambda 'return id(combined_loads).state;'
+  - platform: homeassistant
+    id: temp_ha
+    entity_id: sensor.mean_temps_a
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: temp_label
+            text:
+              format: "%.1f°"
+              args:
+                - 'id(temp_ha).state'
+
+
+
+button:
+  - platform: template
+    name: "Switch Page"
+    id: next_page_btn
+    on_press:
+      then:
+        - lvgl.page.next:
+            animation: OUT_LEFT
+            time: 300ms
+
+time:
+  - platform: homeassistant
+    id: time_ha
+    on_time_sync:
+      then:
+        - script.execute: time_update
+    on_time:
+      - hours: 2,3,4,5
+        minutes: 5
+        seconds: 0
+        then:
+          - switch.turn_on: switch_antiburn
+      - hours: 2,3,4,5
+        minutes: 35
+        seconds: 0
+        then:
+          - switch.turn_off: switch_antiburn
+
+switch:
+  - platform: template
+    name: Antiburn
+    id: switch_antiburn
+    icon: mdi:television-shimmer
+    optimistic: true
+    entity_category: "config"
+    turn_on_action:
+      - logger.log: "Starting Antiburn"
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - delay: 1s
+      - lvgl.pause:
+          show_snow: true
+    turn_off_action:
+      - logger.log: "Stopping Antiburn"
+      - if:
+          condition: lvgl.is_paused
+          then:
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - delay: 1s
+            - lvgl.pause:
+
+# interval:
+#   - interval: 5s
+#     then:
+#       if:
+#         condition: 
+#           sensor.in_range:
+#             id: battery_voltage
+#             above: 25
+#         then:
+#           - logger.log: "ABOVE 25"
+#           - lvgl.arc.update:
+#               id: battery_arc
+#               indicator:
+#                 arc_color: 0x6CC66F
+
+interval:
+  - interval: 1min
+    then:
+      - script.execute: time_update
+
+script:
+  - id: time_update
+    then:
+      - lvgl.label.update:
+          id: time_label
+          text:
+            time_format: "%I:%M"
+            time: !lambda return id(time_ha).now();
+      - lvgl.label.update:
+          id: date_label
+          text:
+            format: "%s %2d %s"
+            args:
+              - '(new const char *[7]{"SUN", "MON", "TUE", "WED", "THUR", "FRI", "SAT"})[id(time_ha).now().day_of_week-1]'
+              - 'id(time_ha).now().day_of_month'
+              - '(new const char *[12]{"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"})[id(time_ha).now().month-1]'
+              
