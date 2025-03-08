@@ -1,12 +1,20 @@
 substitutions:
   entid: counter1
+esphome:
+  on_boot: 
+    then:
+      - number.set: 
+          id: ${entid}_hours_num
+          value: !lambda |- 
+                  return id(${entid}_hours);
 
 globals:
   - id: ${entid}_hours
     type: float
     restore_value: yes
+    initial_value: '0.0'
  
-#Increment by 0,1 every 6 minutes
+#Increment by 0.1 every 6 minutes
 interval:
   - interval: 6min
     then:
