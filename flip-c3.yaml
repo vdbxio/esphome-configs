@@ -21,4 +21,5 @@ packages:
 # Copy any of the following into your yaml preceded by github://vdbxio/esphome-configs/
   qaset: !include packages/flipc3-qa.yaml
 #  uart: !include packages/flipc3-uart.yaml
-  hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
+# Hours Counter is deprecated due to a bug - added uptime sensor in flipc3-base
+#  hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}

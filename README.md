@@ -2,6 +2,9 @@
 
 A modular set of YAML files to use in ESPHome with hardware from VDBX.io
 
+## Breaking changes
+25.03 - Removed number.hours_counter from base config due to calculation bug. Replaced with uptime sensor in decimal hours. Working on an updated "engine hours" counter with more features. 
+
 ## Example usage
 
 change `flip-c3.yaml` to any in the root directory

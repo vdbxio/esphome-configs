@@ -57,4 +57,9 @@ sensor:
     name: "FLIP-C3 Temperature"
     update_interval: 10s
 
-    
+  - platform: uptime
+    name: "Uptime Hours"
+    filters:
+      - lambda: return x / 3600.0;
+    unit_of_measurement: "hours"
+    accuracy_decimals: 2
