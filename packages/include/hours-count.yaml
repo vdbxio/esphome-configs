@@ -10,10 +10,15 @@ globals:
 interval:
   - interval: 6min
     then:
-      - lambda: |-
-         id(${entid}_hours) += 0.1; 
-         id(${entid}_hours_num).publish_state(id(${entid}_hours));
-         ESP_LOGD("main", "Generator Hours: %.1f", id(${entid}_hours));
+      - number.increment: ${entid}_hours_num
+      - logger.log: "Hours Counter Increased by 0.1!"
+      - logger.log:
+          format: "Hours Counter Increased to %.1f "
+          args: [ 'id(${entid}_hours_num).state' ]
+      # - lambda: |-
+      #    id(${entid}_hours) += 0.1; 
+      #    id(${entid}_hours_num).publish_state(id(${entid}_hours));
+      #    ESP_LOGD("main", "Generator Hours: %.1f", id(${entid}_hours));
 
 number:
   - platform: template
