@@ -6,7 +6,8 @@ globals:
     type: float
     restore_value: yes
  
-#While input X on then increment genMins every 60 seconds
+#Increment number by 0.1 every 6 minutes in global 
+#this seems to be generating a ~0.0001 drift
 interval:
   - interval: 6min
     then:
