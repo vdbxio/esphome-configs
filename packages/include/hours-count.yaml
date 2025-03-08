@@ -6,11 +6,14 @@ globals:
     type: float
     restore_value: yes
  
-#While input X on then increment genMins every 60 seconds
+#Increment by 0,1 every 6 minutes
 interval:
   - interval: 6min
     then:
       - number.increment: ${entid}_hours_num
+      - globals.set:
+          id: ${entid}_hours
+          value: id(${entid}_hours_num).state
       - logger.log: "Hours Counter Increased by 0.1!"
       - logger.log:
           format: "Hours Counter Increased to %.1f "
