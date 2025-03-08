@@ -1,39 +1,19 @@
 substitutions:
   entid: counter1
 
-esphome:
-  on_boot: 
-    - priority: -1000
-      then:
-        - number.set: 
-            id: ${entid}_hours_num
-            value: !lambda |- 
-                    return id(${entid}_hours);
-        - logger.log:
-            format: "Hours Counter Restored to %.1f / %1f "
-            args: [ 'id(${entid}_hours_num).state', 'id(${entid}_hours)' ]
-
 globals:
   - id: ${entid}_hours
     type: float
     restore_value: yes
-    initial_value: '0.0'
  
-#Increment by 0.1 every 6 minutes
+#While input X on then increment genMins every 60 seconds
 interval:
   - interval: 6min
     then:
-      - number.increment: ${entid}_hours_num
-      - globals.set:
-          id: ${entid}_hours
-          value: id(${entid}_hours_num).state
-      - logger.log:
-          format: "Hours Counter Increased to %.1f / %.1f"
-          args: [ 'id(${entid}_hours_num).state', 'id(${entid}_hours)' ]
-      # - lambda: |-
-      #    id(${entid}_hours) += 0.1; 
-      #    id(${entid}_hours_num).publish_state(id(${entid}_hours));
-      #    ESP_LOGD("main", "Generator Hours: %.1f", id(${entid}_hours));
+      - lambda: |-
+         id(${entid}_hours) += 0.1; 
+         id(${entid}_hours_num).publish_state(id(${entid}_hours));
+         ESP_LOGD("main", "Generator Hours: %.1f", id(${entid}_hours));
 
 number:
   - platform: template
