@@ -7,6 +7,9 @@ esphome:
           id: ${entid}_hours_num
           value: !lambda |- 
                   return id(${entid}_hours);
+      - logger.log:
+          format: "Hours Counter Restored to %.1f "
+          args: [ 'id(${entid}_hours_num).state' ]
 
 globals:
   - id: ${entid}_hours
