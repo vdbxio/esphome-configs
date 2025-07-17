@@ -21,7 +21,7 @@ binary_sensor:
   - platform: gpio
     pin: 
       number: 9
-      #allow_other_uses: true
+      allow_other_uses: true
       #ignore_pin_validation_error: true
       mode:
         input: true
