@@ -31,18 +31,18 @@ binary_sensor:
     name: Boot Button
     on_press:
       if:
-          condition:
-            binary_sensor.is_off: conn_status
-          then:
-            - light.toggle:
-                id: onboard_rgb     
+        condition:
+          binary_sensor.is_off: conn_status
+        then:
+          - light.toggle:
+              id: onboard_rgb     
   - platform: status
     name: "${friendly_name} Status"
     id: conn_status
     on_state:
       if:
-          condition:
-            api.connected:
-          then:
-            - light.turn_off:
-                id: onboard_rgb
+        condition:
+          api.connected:
+        then:
+          - light.turn_off:
+              id: onboard_rgb
