@@ -1,0 +1,14 @@
+name: Build Firmware
+
+on:
+  push:
+    paths:
+      - 'flip-c3.yaml'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    name: Build ESPHome Configs
+    uses: esphome/build-action@v7
+      with:
+        yaml-file: flip-c3.yaml
