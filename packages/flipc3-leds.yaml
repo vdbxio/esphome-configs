@@ -8,7 +8,7 @@ substitutions:
   status_pin: "10"
   rgb_pin: "8"
 
-wled:
+# wled:
 
 light:
   - platform: status_led
@@ -18,7 +18,7 @@ light:
   - platform: esp32_rmt_led_strip
     id: onboard_rgb
     rgb_order: GRB
-    rmt_channel: 0
+    # rmt_channel: 0
     chipset: ws2812    
     pin: ${rgb_pin}
     restore_mode: RESTORE_AND_OFF
@@ -66,5 +66,5 @@ light:
           name: Color Wipe Fast
           add_led_interval: 100ms
           reverse: false
-      - wled:
+      # - wled:
           # port: 21324
