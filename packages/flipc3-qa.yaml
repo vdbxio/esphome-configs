@@ -30,12 +30,13 @@ binary_sensor:
       inverted: True
     name: Boot Button
     on_press:
-      if:
-        condition:
-          binary_sensor.is_off: conn_status
-        then:
-          - light.toggle:
-              id: onboard_rgb     
+      then:
+        if:
+          condition:
+            binary_sensor.is_off: conn_status
+          then:
+            - light.toggle:
+                id: onboard_rgb     
   - platform: status
     name: "${friendly_name} Status"
     id: conn_status
