@@ -3,7 +3,7 @@ light:
   - platform: esp32_rmt_led_strip
     id: board_surround
     rgb_order: GRB
-    rmt_channel: 0
+    #rmt_channel: 0
     chipset: sk6812    
     pin: 7
     restore_mode: RESTORE_AND_OFF
@@ -51,5 +51,5 @@ light:
           name: Color Wipe Slow
           add_led_interval: 500ms
           reverse: false
-      - wled:
+      #- wled:
           # port: 21324
