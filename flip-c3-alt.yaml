@@ -127,7 +127,7 @@ sensor:
     - multiply: 2.0
 
 
-wled:
+#wled:
 
 light:
   - platform: status_led
@@ -188,7 +188,7 @@ light:
               num_leds: 1
           add_led_interval: 100ms
           reverse: false
-      - wled:
+      #- wled:
           # port: 21324
 
 
