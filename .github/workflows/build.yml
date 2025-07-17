@@ -7,8 +7,11 @@ on:
       - '.github/workflows/build.yml'
 
 jobs:
-  build:
-    name: Build ESPHome Configs
-    uses: esphome/build-action@v7.0.0
-    with:
-      yaml-file: flip-c3.yaml
+  flipc3:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build ESPHome Configs
+        uses: esphome/build-action@v7.0.0
+        with:
+          yaml-file: flip-c3.yaml
+
