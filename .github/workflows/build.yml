@@ -10,6 +10,8 @@ jobs:
   flipc3:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
       - name: Build ESPHome Configs
         uses: esphome/build-action@v7.0.0
         with:
