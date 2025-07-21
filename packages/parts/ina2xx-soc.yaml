@@ -11,7 +11,6 @@ esphome:
 
 substitutions:
   current_id: "rawI"           # The ID of the current sensor (A)
-  soc_initial: "100.0"         # Initial SoC (%)
   soc_min: "0.0"
   soc_max: "100.0"
 
@@ -54,6 +53,58 @@ sensor:
           id: soc_percent_sensor
           state: !lambda 'return id(soc_percent);'
 
+  - platform: integration
+    name: "Battery Charge In (Ah)"
+    id: soc_charge_in_ah
+    sensor: ${current_id}
+    time_unit: h
+    accuracy_decimals: 3
+    unit_of_measurement: "Ah"
+    restore: true
+    filters:
+      - lambda: |-
+          // Only count positive current (charging)
+          return x > 0.0 ? x : 0.0;
+
+  - platform: integration
+    name: "Battery Discharge Out (Ah)"
+    id: soc_discharge_out_ah
+    sensor: ${current_id}
+    time_unit: h
+    accuracy_decimals: 3
+    unit_of_measurement: "Ah"
+    restore: true
+    filters:
+      - lambda: |-
+          // Only count negative current (discharging), as positive value
+          return x < 0.0 ? -x : 0.0;
+
+  - platform: integration
+    name: "Power In (Wh)"
+    id: soc_power_in_wh
+    sensor: rawP
+    time_unit: h
+    accuracy_decimals: 2
+    unit_of_measurement: "Wh"
+    restore: true
+    filters:
+      - lambda: |-
+          // Only count positive power (charging)
+          return x > 0.0 ? x : 0.0;
+
+  - platform: integration
+    name: "Power Out (Wh)"
+    id: soc_power_out_wh
+    sensor: rawP
+    time_unit: h
+    accuracy_decimals: 2
+    unit_of_measurement: "Wh"
+    restore: true
+    filters:
+      - lambda: |-
+          // Only count negative power (discharging), as positive value
+          return x < 0.0 ? -x : 0.0;
+
   - platform: template
     id: soc_percent_sensor
     name: "State of Charge (SoC)"
@@ -72,6 +123,8 @@ sensor:
     name: "Current - Daily"
     power_id: ${current_id}
     accuracy_decimals: 2
+ 
+
 
 button:
   - platform: template
