@@ -40,7 +40,7 @@ switch:
 
 button:
   - platform: template
-    name: Set Zero Offset
+    name: Offset - Set
     id: zero_offset
     entity_category: config
     icon: "mdi:circle"
@@ -53,7 +53,7 @@ button:
           format: "Current - %.1f / Power - %.1f"
           args: [ 'id(offsetI_num).state', 'id(offsetP_calc).state' ]
   - platform: template
-    name: Clear Zero Offset
+    name: Offset - Clear
     id: clear_offset
     entity_category: config
     icon: "mdi:circle"
@@ -87,17 +87,17 @@ sensor:
     # charge: "Charge - Raw"
     # charge_coulombs: "Charge Coul - Raw"
     shunt_voltage:
-      name: "Voltage - Shunt"
+      name: "Shunt - Voltage"
       device_class: "voltage"
       unit_of_measurement: "mV"
       accuracy_decimals: 3
       disabled_by_default: True
     bus_voltage:
-      name: "Voltage - Bus"
+      name: "Bus - Voltage"
       id: rawV
       accuracy_decimals: 3
     current:
-      name: "Current - Raw"
+      name: "Bus - Current"
       id: rawI
       accuracy_decimals: 2
       filters:
@@ -106,7 +106,7 @@ sensor:
           return x;
       - lambda: !lambda 'return x + id(offsetI_num).state;'
     power:
-      name: "Power - Raw"
+      name: "Bus - Power"
       id: rawP
       accuracy_decimals: 2
       filters:
@@ -123,7 +123,7 @@ sensor:
     accuracy_decimals: 2
   - platform: template
     id: offsetP_calc
-    name: "Power - Offset"
+    name: "Offset - Power"
     lambda: !lambda 'return id(offsetI_num).state * id(rawV).state;'
     device_class: "power"
     unit_of_measurement: "W"
@@ -136,16 +136,16 @@ sensor:
 number:
   - platform: template
     id: offsetI_num
-    name: "Current - Offset"
-    initial_value: 0.0
-    min_value: -100.0 
-    max_value: 100.0
-    step: 0.1
+    name: "Offset - Current"
+    initial_value: 0.00
+    min_value: -500.00
+    max_value: 500.00
+    step: 0.01
     optimistic: true
     restore_value: yes
     device_class: "current"
     unit_of_measurement: "A"
-    entity_category: diagnostic
+    entity_category: config
     on_value:
       - logger.log:
           format: "Current Offset set to %.1f"
