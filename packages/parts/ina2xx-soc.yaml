@@ -60,6 +60,7 @@ sensor:
     time_unit: h
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
+    state_class: "total_increasing"
     restore: true
     filters:
       - lambda: |-
@@ -73,6 +74,7 @@ sensor:
     time_unit: h
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
+    state_class: "total_increasing"
     restore: true
     filters:
       - lambda: |-
@@ -86,6 +88,7 @@ sensor:
     time_unit: h
     accuracy_decimals: 2
     unit_of_measurement: "Wh"
+    state_class: "total_increasing"
     restore: true
     filters:
       - lambda: |-
@@ -99,6 +102,7 @@ sensor:
     time_unit: h
     accuracy_decimals: 2
     unit_of_measurement: "Wh"
+    state_class: "total_increasing"
     restore: true
     filters:
       - lambda: |-
