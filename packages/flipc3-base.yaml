@@ -36,9 +36,11 @@ logger:
 button:
   - platform: restart
     name: ${friendly_name} Restart
+    entity_category: diagnostic
   - platform: factory_reset
     name: Restart with Factory Default Settings
     disabled_by_default: True
+    entity_category: diagnostic
 
 
 # # WIFI SHIT
