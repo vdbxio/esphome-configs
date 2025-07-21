@@ -40,28 +40,28 @@ sensor:
     id: current_in
     name: "Current In"
     lambda: |-
-      return id(rawI) > 0.0 ? id(rawI) : 0.0;
+      return id(rawI).state > 0.0 ? id(rawI).state : 0.0;
     update_interval: 1s
     entity_category: diagnostic
   - platform: template
     id: current_out
     name: "Current Out"
     lambda: |-
-      return id(rawI) < 0.0 ? -id(rawI) : 0.0;
+      return id(rawI).state < 0.0 ? -id(rawI).state : 0.0;
     update_interval: 1s
     entity_category: diagnostic
   - platform: template
     id: power_in
     name: "Power In"
     lambda: |-
-      return id(rawP) > 0.0 ? id(rawP) : 0.0;
+      return id(rawP).state > 0.0 ? id(rawP).state : 0.0;
     update_interval: 1s
     entity_category: diagnostic
   - platform: template
     id: power_out
     name: "Power Out"
     lambda: |-
-      return id(rawP) < 0.0 ? -id(rawP) : 0.0;
+      return id(rawP).state < 0.0 ? -id(rawP).state : 0.0;
     update_interval: 1s
     entity_category: diagnostic
 
