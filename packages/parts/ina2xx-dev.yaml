@@ -48,10 +48,10 @@ button:
       - logger.log: "Setting Offset"
       - number.set:
           id: offsetI_num
-          value: !lambda 'return id(rawI).state;'
+          value: !lambda 'return id(rawI).raw_state;'
       - number.set:
           id: offsetP_num
-          value: !lambda 'return id(rawP).state;'
+          value: !lambda 'return id(rawP).raw_state;'
       - logger.log:
           format: "Current - %.1f / Power - %.1f"
           args: [ 'id(offsetI_num).state', 'id(offsetP_num).state' ]
@@ -133,7 +133,8 @@ number:
   - platform: template
     id: offsetI_num
     name: "Current - Offset"
-    min_value: -100.0
+    initial_value: 0.0
+    min_value: -100.0 
     max_value: 100.0
     step: 0.1
     optimistic: true
@@ -148,6 +149,7 @@ number:
   - platform: template
     id: offsetP_num
     name: "Power - Offset"
+    initial_value: 0.0
     min_value: -100.0
     max_value: 100.0
     step: 0.1
