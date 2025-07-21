@@ -1,0 +1,51 @@
+# PowerTool Pro 23.02-working
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# Visit wiki.VDBX.io for more information
+
+substitutions:
+  name: pwrtool500
+  friendly_name: "PwrTool500"
+  project_name: "vdbxio.PwrTool500"
+  project_version: "0.9.5"
+  package_git: "github://vdbxio/esphome-configs/pwrtool500.yaml@main"
+
+packages:
+  flipc3: !include packages/flipc3-base.yaml
+  wifi: !include packages/flipc3-wifi.yaml
+  dash: !include packages/dash-import.yaml
+  shtc3: !include packages/parts/env_shtcx.yaml
+  leds: !include packages/flipc3-leds.yaml
+  ina2xx: !include  {file: "packages/parts/ina2xx-dev.yaml", vars: {address: 0x40}}
+  qaset: !include packages/flipc3-qa.yaml
+  # ina237: !include packages/parts/shunt_ina237.yaml
+  # uart: !include packages/flipc3-uart.yaml
+  # switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}
+  # shunt9611: !include  {file: "packages/parts/shunt9611.yaml", vars: {address: 0x70, entid: shunt1, interval: 1s }}
+  # hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
+
+
+# TODO
+# Tie button to switch or dimmable w/ config option
+# State of charge calculation
+# ESPNow wireless display
+
+output:
+  - platform: ledc
+    id: gpio_7
+    pin: 
+      number: 7
+      inverted: False
+      # allow_other_uses: true
+      
+light:
+  - platform: monochromatic
+    name: "PwrTool MOS Dimmable"
+    disabled_by_default: True
+    output: gpio_7
+
+switch:
+  - platform: output
+    name: "PwrTool MOS Switch"
+    output: gpio_7
