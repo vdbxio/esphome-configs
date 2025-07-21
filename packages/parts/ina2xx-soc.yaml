@@ -92,7 +92,7 @@ sensor:
     restore: true
     entity_category: diagnostic
   - platform: integration
-    name: "Discharge Out"
+    name: "Charge Out"
     id: soc_discharge_out_ah
     sensor: current_out
     time_unit: h
@@ -124,7 +124,7 @@ sensor:
 
   # Main SoC and daily sensors
   - platform: integration
-    name: "Battery Charge (Ah)"
+    name: "Battery Charge"
     id: soc_charge_ah
     sensor: ${current_id}
     time_unit: h
@@ -175,10 +175,10 @@ button:
           // Set charge to full
           id(soc_percent) = 100.0;
       - sensor.integration.reset: soc_charge_ah
-      - sensor.integration.reset: soc_charge_in_ah
-      - sensor.integration.reset: soc_discharge_out_ah
-      - sensor.integration.reset: soc_power_in_wh
-      - sensor.integration.reset: soc_power_out_wh
+    #   - sensor.integration.reset: soc_charge_in_ah
+    #   - sensor.integration.reset: soc_discharge_out_ah
+    #   - sensor.integration.reset: soc_power_in_wh
+    #   - sensor.integration.reset: soc_power_out_wh
       - sensor.template.publish:
           id: soc_percent_sensor
           state: 100.0
