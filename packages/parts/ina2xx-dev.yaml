@@ -128,6 +128,7 @@ sensor:
     device_class: "power"
     unit_of_measurement: "W"
     entity_category: diagnostic
+    update_interval: 1s
     on_value:
       - logger.log:
           format: "Power Offset set to %.1f"
