@@ -117,10 +117,7 @@ sensor:
     temperature:
       name: "Temperature - Shunt"
       accuracy_decimals: 2
-  - platform: total_daily_energy
-    name: "Energy - Daily"
-    power_id: rawP
-    accuracy_decimals: 2
+
   - platform: template
     id: offsetP_calc
     name: "Offset - Power"
