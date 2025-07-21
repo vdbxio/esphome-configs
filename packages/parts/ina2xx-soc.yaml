@@ -1,0 +1,90 @@
+# INA2XX State of Charge (SoC) via Amp-Hour Integration
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+#
+# Usage: !include {file: "packages/parts/ina2xx-soc.yaml", vars: {current_id: rawI}}
+
+esphome:
+  # This is a package file for SoC calculation, intended for inclusion
+  # No device-specific config here
+
+substitutions:
+  current_id: "rawI"           # The ID of the current sensor (A)
+  soc_initial: "100.0"         # Initial SoC (%)
+  soc_min: "0.0"
+  soc_max: "100.0"
+
+number:
+  - platform: template
+    id: soc_capacity_ah_num
+    name: "Capacity - Ah"
+    initial_value: 100.0
+    min_value: 0.0
+    max_value: 1000.0
+    step: 0.1
+    optimistic: true
+    restore_value: yes
+    device_class: "energy"
+    unit_of_measurement: "Ah"
+    entity_category: config
+
+globals:
+  - id: soc_percent
+    type: float
+    restore_value: yes
+    initial_value: '100.0'
+
+sensor:
+  - platform: integration
+    name: "Battery Charge (Ah)"
+    id: soc_charge_ah
+    sensor: ${current_id}
+    time_unit: h
+    accuracy_decimals: 3
+    unit_of_measurement: "Ah"
+    restore: true
+    on_value:
+      - lambda: |-
+          float percent = 100.0 * (x / id(soc_capacity_ah_num).state);
+          if (percent < ${soc_min}) percent = ${soc_min};
+          if (percent > ${soc_max}) percent = ${soc_max};
+          id(soc_percent) = percent;
+      - sensor.template.publish:
+          id: soc_percent_sensor
+          state: !lambda 'return id(soc_percent);'
+
+  - platform: template
+    id: soc_percent_sensor
+    name: "State of Charge (SoC)"
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    device_class: "battery"
+    state_class: "measurement"
+    lambda: 'return id(soc_percent);'
+    update_interval: 10s
+
+  - platform: total_daily_energy
+    name: "Energy - Daily"
+    power_id: rawP
+    accuracy_decimals: 2
+  - platform: total_daily_energy
+    name: "Current - Daily"
+    power_id: ${current_id}
+    accuracy_decimals: 2
+
+button:
+  - platform: template
+    name: "Reset SoC"
+    id: soc_reset
+    icon: "mdi:battery-sync"
+    entity_category: config
+    on_press:
+      - lambda: |-
+          // Set charge to full
+          id(soc_percent) = 100.0;
+      - sensor.integration.reset: soc_charge_ah
+      - sensor.template.publish:
+          id: soc_percent_sensor
+          state: 100.0
+      - logger.log: "SoC reset to 100%" 

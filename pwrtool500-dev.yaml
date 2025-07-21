@@ -18,6 +18,7 @@ packages:
   shtc3: !include packages/parts/env_shtcx.yaml
   leds: !include packages/flipc3-leds.yaml
   ina2xx: !include  {file: "packages/parts/ina2xx-dev.yaml", vars: {address: 0x40}}
+  ina2xx-soc: !include packages/parts/ina2xx-soc.yaml
   qaset: !include packages/flipc3-qa.yaml
   # ina237: !include packages/parts/shunt_ina237.yaml
   # uart: !include packages/flipc3-uart.yaml
