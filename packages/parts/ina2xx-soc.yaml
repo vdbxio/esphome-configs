@@ -43,6 +43,10 @@ sensor:
       return id(rawI).state > 0.0 ? id(rawI).state : 0.0;
     update_interval: 1s
     entity_category: diagnostic
+    device_class: "current"
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
   - platform: template
     id: current_out
     name: "Current Out"
@@ -50,6 +54,10 @@ sensor:
       return id(rawI).state < 0.0 ? -id(rawI).state : 0.0;
     update_interval: 1s
     entity_category: diagnostic
+    device_class: "current"
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
   - platform: template
     id: power_in
     name: "Power In"
@@ -57,6 +65,10 @@ sensor:
       return id(rawP).state > 0.0 ? id(rawP).state : 0.0;
     update_interval: 1s
     entity_category: diagnostic
+    device_class: "power"
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 2
   - platform: template
     id: power_out
     name: "Power Out"
@@ -64,10 +76,13 @@ sensor:
       return id(rawP).state < 0.0 ? -id(rawP).state : 0.0;
     update_interval: 1s
     entity_category: diagnostic
-
+    device_class: "power"
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 2
   # Integration sensors for charge/power in/out
   - platform: integration
-    name: "Battery Charge In (Ah)"
+    name: "Charge In"
     id: soc_charge_in_ah
     sensor: current_in
     time_unit: h
@@ -77,7 +92,7 @@ sensor:
     restore: true
     entity_category: diagnostic
   - platform: integration
-    name: "Battery Discharge Out (Ah)"
+    name: "Discharge Out"
     id: soc_discharge_out_ah
     sensor: current_out
     time_unit: h
@@ -87,7 +102,7 @@ sensor:
     restore: true
     entity_category: diagnostic
   - platform: integration
-    name: "Power In (Wh)"
+    name: "Energy In"
     id: soc_power_in_wh
     sensor: power_in
     time_unit: h
@@ -97,7 +112,7 @@ sensor:
     restore: true
     entity_category: diagnostic
   - platform: integration
-    name: "Power Out (Wh)"
+    name: "Energy Out"
     id: soc_power_out_wh
     sensor: power_out
     time_unit: h
