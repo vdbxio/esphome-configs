@@ -35,6 +35,79 @@ globals:
     initial_value: '100.0'
 
 sensor:
+  # Template sensors for filtered current and power
+  - platform: template
+    id: current_in
+    name: "Current In"
+    lambda: |-
+      return id(rawI) > 0.0 ? id(rawI) : 0.0;
+    update_interval: 1s
+    entity_category: diagnostic
+  - platform: template
+    id: current_out
+    name: "Current Out"
+    lambda: |-
+      return id(rawI) < 0.0 ? -id(rawI) : 0.0;
+    update_interval: 1s
+    entity_category: diagnostic
+  - platform: template
+    id: power_in
+    name: "Power In"
+    lambda: |-
+      return id(rawP) > 0.0 ? id(rawP) : 0.0;
+    update_interval: 1s
+    entity_category: diagnostic
+  - platform: template
+    id: power_out
+    name: "Power Out"
+    lambda: |-
+      return id(rawP) < 0.0 ? -id(rawP) : 0.0;
+    update_interval: 1s
+    entity_category: diagnostic
+
+  # Integration sensors for charge/power in/out
+  - platform: integration
+    name: "Battery Charge In (Ah)"
+    id: soc_charge_in_ah
+    sensor: current_in
+    time_unit: h
+    accuracy_decimals: 3
+    unit_of_measurement: "Ah"
+    state_class: "total_increasing"
+    restore: true
+    entity_category: diagnostic
+  - platform: integration
+    name: "Battery Discharge Out (Ah)"
+    id: soc_discharge_out_ah
+    sensor: current_out
+    time_unit: h
+    accuracy_decimals: 3
+    unit_of_measurement: "Ah"
+    state_class: "total_increasing"
+    restore: true
+    entity_category: diagnostic
+  - platform: integration
+    name: "Power In (Wh)"
+    id: soc_power_in_wh
+    sensor: power_in
+    time_unit: h
+    accuracy_decimals: 2
+    unit_of_measurement: "Wh"
+    state_class: "total_increasing"
+    restore: true
+    entity_category: diagnostic
+  - platform: integration
+    name: "Power Out (Wh)"
+    id: soc_power_out_wh
+    sensor: power_out
+    time_unit: h
+    accuracy_decimals: 2
+    unit_of_measurement: "Wh"
+    state_class: "total_increasing"
+    restore: true
+    entity_category: diagnostic
+
+  # Main SoC and daily sensors
   - platform: integration
     name: "Battery Charge (Ah)"
     id: soc_charge_ah
@@ -42,6 +115,7 @@ sensor:
     time_unit: h
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
+    state_class: "total_increasing"
     restore: true
     on_value:
       - lambda: |-
@@ -52,62 +126,7 @@ sensor:
       - sensor.template.publish:
           id: soc_percent_sensor
           state: !lambda 'return id(soc_percent);'
-
-  - platform: integration
-    name: "Battery Charge In (Ah)"
-    id: soc_charge_in_ah
-    sensor: ${current_id}
-    time_unit: h
-    accuracy_decimals: 3
-    unit_of_measurement: "Ah"
-    state_class: "total_increasing"
-    restore: true
-    filters:
-      - lambda: |-
-          // Only count positive current (charging)
-          return x > 0.0 ? x : 0.0;
-
-  - platform: integration
-    name: "Battery Discharge Out (Ah)"
-    id: soc_discharge_out_ah
-    sensor: ${current_id}
-    time_unit: h
-    accuracy_decimals: 3
-    unit_of_measurement: "Ah"
-    state_class: "total_increasing"
-    restore: true
-    filters:
-      - lambda: |-
-          // Only count negative current (discharging), as positive value
-          return x < 0.0 ? -x : 0.0;
-
-  - platform: integration
-    name: "Power In (Wh)"
-    id: soc_power_in_wh
-    sensor: rawP
-    time_unit: h
-    accuracy_decimals: 2
-    unit_of_measurement: "Wh"
-    state_class: "total_increasing"
-    restore: true
-    filters:
-      - lambda: |-
-          // Only count positive power (charging)
-          return x > 0.0 ? x : 0.0;
-
-  - platform: integration
-    name: "Power Out (Wh)"
-    id: soc_power_out_wh
-    sensor: rawP
-    time_unit: h
-    accuracy_decimals: 2
-    unit_of_measurement: "Wh"
-    state_class: "total_increasing"
-    restore: true
-    filters:
-      - lambda: |-
-          // Only count negative power (discharging), as positive value
-          return x < 0.0 ? -x : 0.0;
+    entity_category: diagnostic
 
   - platform: template
     id: soc_percent_sensor
@@ -123,12 +142,12 @@ sensor:
     name: "Energy - Daily"
     power_id: rawP
     accuracy_decimals: 2
+    entity_category: diagnostic
   - platform: total_daily_energy
     name: "Current - Daily"
     power_id: ${current_id}
     accuracy_decimals: 2
- 
-
+    entity_category: diagnostic
 
 button:
   - platform: template
@@ -141,6 +160,10 @@ button:
           // Set charge to full
           id(soc_percent) = 100.0;
       - sensor.integration.reset: soc_charge_ah
+      - sensor.integration.reset: soc_charge_in_ah
+      - sensor.integration.reset: soc_discharge_out_ah
+      - sensor.integration.reset: soc_power_in_wh
+      - sensor.integration.reset: soc_power_out_wh
       - sensor.template.publish:
           id: soc_percent_sensor
           state: 100.0
