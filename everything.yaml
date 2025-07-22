@@ -18,7 +18,8 @@ packages:
   uart: !include packages/flipc3-uart.yaml
   wifi: !include packages/flipc3-wifi.yaml
   shtc3: !include packages/parts/env_shtcx.yaml
-  switchset: !include  {file: "packages/flip-switch4.yaml", vars: {address: 0x20, entid: swset1 }}
-  shunt9611: !include  {file: "packages/parts/shunt9611.yaml", vars: {address: 0x70, entid: shunt1 , interval: 1s }}
+  switchset: !include  {file: "packages/switchset.yaml", vars: {address: 0x20, entid: swset1 }}
   hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
   shunt226: !include  {file: "packages/parts/shunt226.yaml", vars: {address: 0x40, entid: shunt2}}
+  ina2xx-soc: !include  {file: "packages/parts/ina2xx-soc.yaml", vars: {current_id: rawI}}
+  victron-uart-dev: !include  {file: "packages/parts/victron-uart-dev.yaml"}

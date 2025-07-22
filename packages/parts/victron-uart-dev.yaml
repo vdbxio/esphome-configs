@@ -1,0 +1,127 @@
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# Drop in your config.yaml to connect to a Victron Smart Shunt or MPPT charger
+#  
+#  package: github://vdbxio/esphome-configs/packages/parts/victron-uart-dev.yaml
+# 
+#   - only need to connect RX and GND to your Victron Device
+#   - Do Not power ESP32 from the Victron Device    
+# 
+
+external_components:
+    - source: github://KinDR007/VictronMPPT-ESPHOME@main
+      refresh: 0s
+
+esphome:
+  devices:
+    - id: victron_shunt
+      name: "Victron Smart Shunt"
+      
+uart:
+  id: uart_0
+  tx_pin: 21  # <--- Not connected! The communication is read-only
+  rx_pin: 20  # <--- Connect this GPIO and GND to the MPPT charger
+  baud_rate: 19200
+  rx_buffer_size: 256
+
+victron:
+  uart_id: uart_0
+  id: victron_uart
+  throttle: 500ms
+
+sensor:
+  - platform: victron
+    victron_id: victron_uart
+    battery_voltage:
+      name: "Victron Battery Voltage"
+      device_id: victron_shunt
+      state_class: "measurement"
+    auxiliary_battery_voltage:
+      name: "Victron Auxiliary Battery Voltage"
+      device_id: victron_shunt
+      state_class: "measurement"
+    battery_current:
+      name: "Victron Battery Current"
+      device_id: victron_shunt
+      on_value:
+        then:
+          - sensor.template.publish:
+              id: vict_current_invert
+              state: !lambda 'return x;'
+      state_class: "measurement"
+    instantaneous_power:
+      name: "Victron Instantaneous Power"
+      device_id: victron_shunt
+      accuracy_decimals: 2
+      on_value:
+        then:
+          - sensor.template.publish:
+              id: victinvert
+              state: !lambda 'return x;'
+    consumed_amp_hours:
+      name: "Victron Consumed Amp Hours"
+      device_id: victron_shunt
+      state_class: "measurement"
+    min_battery_voltage:
+      name: "Victron Min Battery Voltage"
+      device_id: victron_shunt
+    max_battery_voltage:
+      name: "Victron Max Battery Voltage"
+      device_id: victron_shunt
+      state_class: "measurement"
+    amount_of_discharged_energy:
+      name: "Victron Amount of Discharged Energy"
+      device_id: victron_shunt
+      state_class: "measurement"
+    amount_of_charged_energy:
+      name: "Victron Amount of Charged Energy"
+      device_id: victron_shunt
+      state_class: "measurement"
+  - platform: template
+    name: "Victron Power Invert"
+    device_id: victron_shunt
+    id: victinvert
+    device_class: "power"
+    unit_of_measurement: "W"
+    accuracy_decimals: 0
+    filters:
+      - lambda: return x * -1;
+  - platform: template
+    name: "Victron Current Invert"
+    device_id: victron_shunt
+    id: vict_current_invert
+    device_class: "power"
+    accuracy_decimals: 3
+    unit_of_measurement: "A"
+    filters:
+      - lambda: return x * -1;
+  - platform: total_daily_energy
+    name: "Victron Side Daily Energy"
+    power_id: victinvert
+    device_id: victron_shunt
+
+text_sensor:
+  - platform: victron
+    victron_id: victron_uart
+    alarm_condition_active:
+      device_id: victron_shunt
+      name: "Victron Alarm Condition Active"
+    alarm_reason:
+      device_id: victron_shunt
+      name: "Victron Alarm Reason"
+    model_description:
+      device_id: victron_shunt
+      name: "Victron Model Description"
+    firmware_version:
+      device_id: victron_shunt
+      name: "Victron Firmware Version"
+    device_type:
+      device_id: victron_shunt
+      name: "Victron Device Type"
+    serial_number:
+      device_id: victron_shunt
+      name: "Victron Serial Number"
+    dc_monitor_mode:
+      device_id: victron_shunt
+      name: "Victron DC Monitor Mode"
+
