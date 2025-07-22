@@ -9,8 +9,7 @@
 # 
 
 substitutions:
-  name: "Victron Smart Shunt"
-  friendly_name: "Victron Smart Shunt"
+  device_name: "Victron Smart Shunt"
 
 external_components:
     - source: github://KinDR007/VictronMPPT-ESPHOME@main
@@ -19,7 +18,7 @@ external_components:
 esphome:
   devices:
     - id: victron_shunt
-      name: ${friendly_name}
+      name: ${device_name}
       
 uart:
   id: uart_0
@@ -37,15 +36,15 @@ sensor:
   - platform: victron
     victron_id: victron_uart
     battery_voltage:
-      name: "${friendly_name} Voltage"
+      name: "${device_name} Voltage"
       device_id: victron_shunt
       state_class: "measurement"
     auxiliary_battery_voltage:
-      name: "${friendly_name} Voltage - Aux"
+      name: "${device_name} Voltage - Aux"
       device_id: victron_shunt
       state_class: "measurement"
     battery_current:
-      name: "${friendly_name} Current"
+      name: "${device_name} Current"
       device_id: victron_shunt
       on_value:
         then:
@@ -54,7 +53,7 @@ sensor:
               state: !lambda 'return x;'
       state_class: "measurement"
     instantaneous_power:
-      name: "${friendly_name} Power"
+      name: "${device_name} Power"
       device_id: victron_shunt
       accuracy_decimals: 2
       on_value:
@@ -63,22 +62,22 @@ sensor:
               id: victinvert
               state: !lambda 'return x;'
     consumed_amp_hours:
-      name: "${friendly_name} Consumed Amp Hours"
+      name: "${device_name} Consumed Amp Hours"
       device_id: victron_shunt
       state_class: "measurement"
     min_battery_voltage:
-      name: "${friendly_name} Min Battery Voltage"
+      name: "${device_name} Min Battery Voltage"
       device_id: victron_shunt
     max_battery_voltage:
-      name: "${friendly_name} Max Battery Voltage"
+      name: "${device_name} Max Battery Voltage"
       device_id: victron_shunt
       state_class: "measurement"
     amount_of_discharged_energy:
-      name: "${friendly_name} Total Discharged Energy"
+      name: "${device_name} Total Discharged Energy"
       device_id: victron_shunt
       state_class: "measurement"
     amount_of_charged_energy:
-      name: "${friendly_name} Total Charged Energy"
+      name: "${device_name} Total Charged Energy"
       device_id: victron_shunt
       state_class: "measurement"
   - platform: template
@@ -91,7 +90,7 @@ sensor:
     filters:
       - lambda: return x * -1;
   - platform: template
-    name: "${friendly_name} Current Inverted"
+    name: "${device_name} Current Inverted"
     device_id: victron_shunt
     id: vict_current_invert
     device_class: "power"
@@ -100,7 +99,7 @@ sensor:
     filters:
       - lambda: return x * -1;
   - platform: total_daily_energy
-    name: "${friendly_name} Daily Energy"
+    name: "${device_name} Daily Energy"
     power_id: victinvert
     device_id: victron_shunt
 
@@ -109,29 +108,29 @@ text_sensor:
     victron_id: victron_uart
     alarm_condition_active:
       device_id: victron_shunt
-      name: "${friendly_name} Alarm Condition Active"
+      name: "${device_name} Alarm Condition Active"
       entity_category: "diagnostic"
     alarm_reason:
       device_id: victron_shunt
-      name: "${friendly_name} Alarm Reason"
+      name: "${device_name} Alarm Reason"
       entity_category: "diagnostic"
     model_description:
       device_id: victron_shunt
-      name: "${friendly_name} Model Description"
+      name: "${device_name} Model Description"
       entity_category: "diagnostic"
     firmware_version:
       device_id: victron_shunt
-      name: "${friendly_name} Firmware Version"
+      name: "${device_name} Firmware Version"
       entity_category: "diagnostic"
     device_type:
       device_id: victron_shunt
-      name: "${friendly_name} Device Type"
+      name: "${device_name} Device Type"
       entity_category: "diagnostic"
     serial_number:
       device_id: victron_shunt
-      name: "${friendly_name} Serial Number"
+      name: "${device_name} Serial Number"
       entity_category: "diagnostic"
     dc_monitor_mode:
       device_id: victron_shunt
-      name: "${friendly_name} DC Monitor Mode"
+      name: "${device_name} DC Monitor Mode"
       entity_category: "diagnostic"
