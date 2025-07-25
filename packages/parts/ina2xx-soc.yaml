@@ -13,6 +13,16 @@ substitutions:
   current_id: "rawI"           # The ID of the current sensor (A)
   soc_min: "0.0"
   soc_max: "100.0"
+select:
+  - platform: template
+    id: mode_select
+    name: "Mode"
+    optimistic: true
+    restore_value: yes
+    entity_category: config
+    options:
+      - "Battery Monitor - Bidirectional"
+      - "DC Load or Charger - Unidirectional"
 
 number:
   - platform: template
@@ -30,6 +40,10 @@ number:
 
 globals:
   - id: soc_percent
+    type: float
+    restore_value: yes
+    initial_value: '100.0'
+  - id: current_charge_ah
     type: float
     restore_value: yes
     initial_value: '100.0'
@@ -88,7 +102,6 @@ sensor:
     time_unit: h
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
-    state_class: "total_increasing"
     restore: true
     entity_category: diagnostic
   - platform: integration
@@ -98,7 +111,6 @@ sensor:
     time_unit: h
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
-    state_class: "total_increasing"
     restore: true
     entity_category: diagnostic
   - platform: integration
@@ -108,7 +120,6 @@ sensor:
     time_unit: h
     accuracy_decimals: 2
     unit_of_measurement: "Wh"
-    state_class: "total_increasing"
     restore: true
     entity_category: diagnostic
   - platform: integration
@@ -118,23 +129,23 @@ sensor:
     time_unit: h
     accuracy_decimals: 2
     unit_of_measurement: "Wh"
-    state_class: "total_increasing"
     restore: true
     entity_category: diagnostic
 
-  # Main SoC and daily sensors
+  # Net integration sensor for SoC math (delta since last reset)
   - platform: integration
-    name: "Battery Charge"
-    id: soc_charge_ah
+    name: "Net Charge Delta"
+    id: net_ah
     sensor: ${current_id}
     time_unit: h
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
-    state_class: "total_increasing"
     restore: true
     on_value:
       - lambda: |-
-          float percent = 100.0 * (x / id(soc_capacity_ah_num).state);
+          // Update current charge: full - net discharge
+          id(current_charge_ah) = id(soc_capacity_ah_num).state + x;
+          float percent = 100.0 * (id(current_charge_ah) / id(soc_capacity_ah_num).state);
           if (percent < ${soc_min}) percent = ${soc_min};
           if (percent > ${soc_max}) percent = ${soc_max};
           id(soc_percent) = percent;
@@ -166,19 +177,15 @@ sensor:
 
 button:
   - platform: template
-    name: "Reset SoC"
+    name: "Reset SoC to 100%"
     id: soc_reset
     icon: "mdi:battery-sync"
     entity_category: config
     on_press:
       - lambda: |-
-          // Set charge to full
+          id(current_charge_ah) = id(soc_capacity_ah_num).state;
           id(soc_percent) = 100.0;
-      - sensor.integration.reset: soc_charge_ah
-    #   - sensor.integration.reset: soc_charge_in_ah
-    #   - sensor.integration.reset: soc_discharge_out_ah
-    #   - sensor.integration.reset: soc_power_in_wh
-    #   - sensor.integration.reset: soc_power_out_wh
+      - sensor.integration.reset: net_ah
       - sensor.template.publish:
           id: soc_percent_sensor
           state: 100.0
