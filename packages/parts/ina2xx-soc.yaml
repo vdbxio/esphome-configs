@@ -137,7 +137,7 @@ sensor:
     unit_of_measurement: "Wh"
     restore: true
     entity_category: diagnostic
-    state-class: "total_increasing"
+    state_class: "total_increasing"
   # Net integration sensor for SoC math (delta since last reset)
   - platform: integration
     name: "Net Charge Delta"
