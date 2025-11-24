@@ -6,30 +6,6 @@
 # ina2xx: !include  {file: "packages/parts/ina2xx.yaml", vars: {address: 0x40}}
 
 
-# globals:
-#   - id: offset_power
-#     type: float
-#     restore_value: yes
-#     initial_value: '0.0'
-#   - id: offset_current
-#     type: float
-#     restore_value: yes
-#     initial_value: '0.0'
-
-
-# esphome:
-#   on_boot:
-#   - priority: -200.0
-#     then:
-#       - sensor.template.publish:
-#           id: offsetI_int
-#           state: !lambda 'return id(offset_current);'
-#       - sensor.template.publish:
-#           id: offsetP_int
-#           state: !lambda 'return id(offset_power);'
-
-
-
 switch:
   - platform: template
     name: "Invert"

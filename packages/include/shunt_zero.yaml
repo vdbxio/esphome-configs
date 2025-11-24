@@ -9,23 +9,5 @@ globals:
     type: float
     restore_value: yes
  
-#While input X on then increment genMins every 60 seconds
-interval:
-  - interval: 6min
-    then:
-      - lambda: |-
-         id(${entid}_hours) += 0.1; 
-         id(${entid}_hours_num).publish_state(id(${entid}_hours));
-         ESP_LOGD("main", "Generator Hours: %.1f", id(${entid}_hours));
-
-number:
-  - platform: template
-    name: "Hours Counter"
-    id: ${entid}_hours_num
-    optimistic: true
-    min_value: 0
-    max_value: 100000
-    step: 0.1
-    accuracy_decimals: 1
 
     

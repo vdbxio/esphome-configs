@@ -13,6 +13,8 @@ substitutions:
   current_id: "rawI"           # The ID of the current sensor (A)
   soc_min: "0.0"
   soc_max: "100.0"
+
+  
 select:
   - platform: template
     id: mode_select
@@ -22,7 +24,8 @@ select:
     entity_category: config
     options:
       - "Battery Monitor - Bidirectional"
-      - "DC Load or Charger - Unidirectional"
+      - "DC Load - Unidirectional"
+      - "DC Charger - Unidirectional"
 
 number:
   - platform: template
