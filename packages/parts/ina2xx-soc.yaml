@@ -106,6 +106,7 @@ sensor:
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
     restore: true
+    state_class: "total_increasing"
     entity_category: diagnostic
   - platform: integration
     name: "Charge Out"
@@ -115,6 +116,7 @@ sensor:
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
     restore: true
+    state_class: "total_increasing"
     entity_category: diagnostic
   - platform: integration
     name: "Energy In"
@@ -124,6 +126,7 @@ sensor:
     accuracy_decimals: 2
     unit_of_measurement: "Wh"
     restore: true
+    state_class: "total_increasing"
     entity_category: diagnostic
   - platform: integration
     name: "Energy Out"
@@ -134,7 +137,7 @@ sensor:
     unit_of_measurement: "Wh"
     restore: true
     entity_category: diagnostic
-
+    state-class: "total_increasing"
   # Net integration sensor for SoC math (delta since last reset)
   - platform: integration
     name: "Net Charge Delta"
