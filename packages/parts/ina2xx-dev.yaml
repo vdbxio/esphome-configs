@@ -3,8 +3,7 @@
 # VDBX.io / @clomads
 # CC-BY-SA 4.0
 # 
-# ina2xx: !include  {file: "packages/parts/ina2xx.yaml", vars: {address: 0x40}}
-
+# ina2xx: !include  {file: "packages/parts/ina2xx-dev.yaml", vars: {address: 0x40}}
 
 switch:
   - platform: template
@@ -24,10 +23,10 @@ button:
       - logger.log: "Setting Offset"
       - number.set:
           id: offsetI_num
-          value: !lambda 'return id(rawI).raw_state;'
+          value: !lambda 'return id(offsetI_num).state + id(rawI).state;'
       - logger.log:
           format: "Current - %.1f / Power - %.1f"
-          args: [ 'id(offsetI_num).state', 'id(offsetP_calc).state' ]
+          args: [ 'id(offsetI_num).state', 'id(offsetI_num).state * id(rawV).state' ]
   - platform: template
     name: Offset - Clear
     id: clear_offset
@@ -40,11 +39,25 @@ button:
           value: 0.0
       - logger.log:
           format: "Current - %.1f / Power - %.1f"
-          args: [ 'id(offsetI_num).state', 'id(offsetP_calc).state' ]
+          args: [ '0.0f', '0.0f' ]
 
-
-
-
+number:
+  - platform: template
+    id: offsetI_num
+    name: "Offset - Current"
+    initial_value: 0.0
+    min_value: -500.0
+    max_value: 500.0
+    step: 0.01
+    optimistic: true
+    restore_value: yes
+    device_class: "current"
+    unit_of_measurement: "A"
+    entity_category: config
+    on_value:
+      - logger.log:
+          format: "Current Offset set to %.1f"
+          args: [ 'id(offsetI_num).state' ]
 
 sensor:
   - platform: ina2xx_i2c
@@ -71,71 +84,31 @@ sensor:
     bus_voltage:
       name: "Bus - Voltage"
       id: rawV
+      device_class: "voltage"
+      unit_of_measurement: "V"
       accuracy_decimals: 3
     current:
       name: "Bus - Current"
       id: rawI
+      device_class: "current"
+      unit_of_measurement: "A"
       accuracy_decimals: 2
       filters:
       - lambda: !lambda |-
           if (id(invert).state) return {x * -1};
           return x;
-      - lambda: !lambda 'return x + id(offsetI_num).state;'
+      - lambda: !lambda 'return x - id(offsetI_num).state;'
     power:
       name: "Bus - Power"
       id: rawP
+      device_class: "power"
+      unit_of_measurement: "W"
       accuracy_decimals: 2
       filters:
       - lambda: !lambda |-
-          if (id(invert).state) return {x * -1};
-          return x;
-      - lambda: !lambda 'return x + id(offsetP_calc).state;'
+          float i = id(rawI).raw_state;
+          if (id(invert).state) i *= -1;
+          return (i - id(offsetI_num).state) * id(rawV).state;
     temperature:
       name: "Temperature - Shunt"
       accuracy_decimals: 2
-
-  - platform: template
-    id: offsetP_calc
-    name: "Offset - Power"
-    lambda: !lambda 'return id(offsetI_num).state * id(rawV).state;'
-    device_class: "power"
-    unit_of_measurement: "W"
-    entity_category: diagnostic
-    update_interval: 1s
-    on_value:
-      - logger.log:
-          format: "Power Offset set to %.1f"
-          args: [ 'id(offsetP_calc).state' ]
-number:
-  - platform: template
-    id: offsetI_num
-    name: "Offset - Current"
-    initial_value: 0.00
-    min_value: -500.00
-    max_value: 500.00
-    step: 0.01
-    optimistic: true
-    restore_value: yes
-    device_class: "current"
-    unit_of_measurement: "A"
-    entity_category: config
-    on_value:
-      - logger.log:
-          format: "Current Offset set to %.1f"
-          args: [ 'id(offsetI_num).state' ]
-
-
-
-      
-
-
-
-
-
-
-
-
-
-
-
-
