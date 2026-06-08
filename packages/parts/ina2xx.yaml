@@ -5,6 +5,9 @@
 # 
 # ina2xx: !include  {file: "packages/parts/ina2xx.yaml", vars: {address: 0x40}}
 
+time:
+  - platform: homeassistant
+    id: ha_time
 
 globals:
   - id: offset_power
@@ -19,14 +22,14 @@ globals:
 
 esphome:
   on_boot:
-  - priority: -200.0
-    then:
-      - sensor.template.publish:
-          id: offsetI_int
-          state: !lambda 'return id(offset_current);'
-      - sensor.template.publish:
-          id: offsetP_int
-          state: !lambda 'return id(offset_power);'
+    - priority: -200.0
+      then:
+        - sensor.template.publish:
+            id: offsetI_int
+            state: !lambda 'return id(offset_current);'
+        - sensor.template.publish:
+            id: offsetP_int
+            state: !lambda 'return id(offset_power);'
 
 
 
@@ -48,13 +51,13 @@ button:
       - logger.log: "Setting Offset"
       - sensor.template.publish:
           id: offsetI_int
-          state: !lambda 'return id(rawI).state;'
+          state: !lambda 'return id(offset_current) + id(rawI).state;'
       - sensor.template.publish:
           id: offsetP_int
-          state: !lambda 'return id(rawP).state;'
+          state: !lambda 'return id(offset_power) + id(rawP).state;'
       - logger.log:
           format: "Current - %.1f / Power - %.1f"
-          args: [ 'id(offset_current)', 'id(offset_power)' ]
+          args: [ 'id(offset_current) + id(rawI).state', 'id(offset_power) + id(rawP).state' ]
   - platform: template
     name: Clear Zero Offset
     id: clear_offset
@@ -70,7 +73,7 @@ button:
           state: 0
       - logger.log:
           format: "Current - %.1f / Power - %.1f"
-          args: [ 'id(offset_current)', 'id(offset_power)' ]
+          args: [ '0.0f', '0.0f' ]
 
 
 
@@ -101,10 +104,14 @@ sensor:
     bus_voltage:
       name: "Voltage - Bus"
       id: rawV
+      device_class: "voltage"
+      unit_of_measurement: "V"
       accuracy_decimals: 3
     current:
       name: "Current - Raw"
       id: rawI
+      device_class: "current"
+      unit_of_measurement: "A"
       accuracy_decimals: 2
       filters:
       - lambda: !lambda |-
@@ -116,6 +123,8 @@ sensor:
     power:
       name: "Power - Raw"
       id: rawP
+      device_class: "power"
+      unit_of_measurement: "W"
       accuracy_decimals: 2
       filters:
       - lambda: !lambda |-
@@ -157,12 +166,6 @@ sensor:
       - globals.set:
           id: offset_power
           value: !lambda 'return x;'
-
-
-
-
-
-
 
 
 
