@@ -5,6 +5,18 @@
 # 
 # ina2xx: !include  {file: "packages/parts/ina2xx-dev.yaml", vars: {address: 0x40}}
 
+select:
+  - platform: template
+    id: mode_select
+    name: "Mode"
+    optimistic: true
+    restore_value: yes
+    entity_category: config
+    options:
+      - "Battery Monitor - Bidirectional"
+      - "DC Load - Unidirectional"
+      - "DC Charger - Unidirectional"
+
 switch:
   - platform: template
     name: "Invert"
@@ -12,6 +24,7 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
     entity_category: config
+    disabled_by_default: true
 
 button:
   - platform: template
@@ -80,7 +93,7 @@ sensor:
       device_class: "voltage"
       unit_of_measurement: "mV"
       accuracy_decimals: 3
-      disabled_by_default: True
+      disabled_by_default: true
     bus_voltage:
       name: "Bus - Voltage"
       id: rawV
@@ -96,8 +109,12 @@ sensor:
       filters:
       - lambda: !lambda 'return x - id(offsetI_num).state;'
       - lambda: !lambda |-
-          if (id(invert).state) return {x * -1};
-          return x;
+          if (id(mode_select).state == "Battery Monitor - Bidirectional") {
+            if (id(invert).state) return {x * -1};
+            return x;
+          }
+          if (x > 0.0f) return x;
+          return 0.0f;
     power:
       name: "Bus - Power"
       id: rawP
@@ -107,7 +124,11 @@ sensor:
       filters:
       - lambda: !lambda |-
           float i = id(rawI).raw_state - id(offsetI_num).state;
-          if (id(invert).state) i *= -1;
+          if (id(mode_select).state == "Battery Monitor - Bidirectional") {
+            if (id(invert).state) i *= -1;
+          } else if (i < 0.0f) {
+            i = 0.0f;
+          }
           return i * id(rawV).state;
     temperature:
       name: "Temperature - Shunt"

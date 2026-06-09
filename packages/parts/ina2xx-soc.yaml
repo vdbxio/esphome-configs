@@ -4,28 +4,14 @@
 # CC-BY-SA 4.0
 #
 # Usage: !include {file: "packages/parts/ina2xx-soc.yaml", vars: {current_id: rawI}}
-
-esphome:
-  # This is a package file for SoC calculation, intended for inclusion
-  # No device-specific config here
+#
+# Requires packages/parts/ina2xx-dev.yaml (mode_select, rawI, rawP).
+# Most integration entities are disabled_by_default — enable in HA per use case.
 
 substitutions:
   current_id: "rawI"           # The ID of the current sensor (A)
   soc_min: "0.0"
   soc_max: "100.0"
-
-  
-select:
-  - platform: template
-    id: mode_select
-    name: "Mode"
-    optimistic: true
-    restore_value: yes
-    entity_category: config
-    options:
-      - "Battery Monitor - Bidirectional"
-      - "DC Load - Unidirectional"
-      - "DC Charger - Unidirectional"
 
 number:
   - platform: template
@@ -52,13 +38,15 @@ globals:
     initial_value: '100.0'
 
 sensor:
-  # Template sensors for filtered current and power
   - platform: template
     id: current_in
     name: "Current In"
-    lambda: |-
-      return id(rawI).state > 0.0 ? id(rawI).state : 0.0;
+    lambda: !lambda |-
+      if (id(mode_select).state == "DC Load - Unidirectional") return 0.0f;
+      if (id(mode_select).state == "DC Charger - Unidirectional") return id(rawI).state;
+      return id(rawI).state > 0.0f ? id(rawI).state : 0.0f;
     update_interval: 1s
+    disabled_by_default: true
     entity_category: diagnostic
     device_class: "current"
     unit_of_measurement: "A"
@@ -67,9 +55,12 @@ sensor:
   - platform: template
     id: current_out
     name: "Current Out"
-    lambda: |-
-      return id(rawI).state < 0.0 ? -id(rawI).state : 0.0;
+    lambda: !lambda |-
+      if (id(mode_select).state == "DC Charger - Unidirectional") return 0.0f;
+      if (id(mode_select).state == "DC Load - Unidirectional") return id(rawI).state;
+      return id(rawI).state < 0.0f ? -id(rawI).state : 0.0f;
     update_interval: 1s
+    disabled_by_default: true
     entity_category: diagnostic
     device_class: "current"
     unit_of_measurement: "A"
@@ -78,9 +69,12 @@ sensor:
   - platform: template
     id: power_in
     name: "Power In"
-    lambda: |-
-      return id(rawP).state > 0.0 ? id(rawP).state : 0.0;
+    lambda: !lambda |-
+      if (id(mode_select).state == "DC Load - Unidirectional") return 0.0f;
+      if (id(mode_select).state == "DC Charger - Unidirectional") return id(rawP).state;
+      return id(rawP).state > 0.0f ? id(rawP).state : 0.0f;
     update_interval: 1s
+    disabled_by_default: true
     entity_category: diagnostic
     device_class: "power"
     unit_of_measurement: "W"
@@ -89,15 +83,17 @@ sensor:
   - platform: template
     id: power_out
     name: "Power Out"
-    lambda: |-
-      return id(rawP).state < 0.0 ? -id(rawP).state : 0.0;
+    lambda: !lambda |-
+      if (id(mode_select).state == "DC Charger - Unidirectional") return 0.0f;
+      if (id(mode_select).state == "DC Load - Unidirectional") return id(rawP).state;
+      return id(rawP).state < 0.0f ? -id(rawP).state : 0.0f;
     update_interval: 1s
+    disabled_by_default: true
     entity_category: diagnostic
     device_class: "power"
     unit_of_measurement: "W"
     state_class: "measurement"
     accuracy_decimals: 2
-  # Integration sensors for charge/power in/out
   - platform: integration
     name: "Charge In"
     id: soc_charge_in_ah
@@ -106,6 +102,7 @@ sensor:
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
     restore: true
+    disabled_by_default: true
     state_class: "total_increasing"
     entity_category: diagnostic
   - platform: integration
@@ -116,6 +113,7 @@ sensor:
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
     restore: true
+    disabled_by_default: true
     state_class: "total_increasing"
     entity_category: diagnostic
   - platform: integration
@@ -126,6 +124,7 @@ sensor:
     accuracy_decimals: 2
     unit_of_measurement: "Wh"
     restore: true
+    disabled_by_default: true
     state_class: "total_increasing"
     entity_category: diagnostic
   - platform: integration
@@ -136,9 +135,9 @@ sensor:
     accuracy_decimals: 2
     unit_of_measurement: "Wh"
     restore: true
-    entity_category: diagnostic
+    disabled_by_default: true
     state_class: "total_increasing"
-  # Net integration sensor for SoC math (delta since last reset)
+    entity_category: diagnostic
   - platform: integration
     name: "Net Charge Delta"
     id: net_ah
@@ -147,11 +146,12 @@ sensor:
     accuracy_decimals: 3
     unit_of_measurement: "Ah"
     restore: true
+    disabled_by_default: true
     on_value:
-      - lambda: |-
-          // Update current charge: full - net discharge
+      - lambda: !lambda |-
+          if (id(mode_select).state != "Battery Monitor - Bidirectional") return;
           id(current_charge_ah) = id(soc_capacity_ah_num).state + x;
-          float percent = 100.0 * (id(current_charge_ah) / id(soc_capacity_ah_num).state);
+          float percent = 100.0f * (id(current_charge_ah) / id(soc_capacity_ah_num).state);
           if (percent < ${soc_min}) percent = ${soc_min};
           if (percent > ${soc_max}) percent = ${soc_max};
           id(soc_percent) = percent;
@@ -159,7 +159,6 @@ sensor:
           id: soc_percent_sensor
           state: !lambda 'return id(soc_percent);'
     entity_category: diagnostic
-
   - platform: template
     id: soc_percent_sensor
     name: "State of Charge (SoC)"
@@ -169,16 +168,17 @@ sensor:
     state_class: "measurement"
     lambda: 'return id(soc_percent);'
     update_interval: 10s
-
   - platform: total_daily_energy
     name: "Energy - Daily"
     power_id: rawP
     accuracy_decimals: 2
+    disabled_by_default: true
     entity_category: diagnostic
   - platform: total_daily_energy
-    name: "Current - Daily"
+    name: "Charge - Daily"
     power_id: ${current_id}
     accuracy_decimals: 2
+    disabled_by_default: true
     entity_category: diagnostic
 
 button:
@@ -195,4 +195,4 @@ button:
       - sensor.template.publish:
           id: soc_percent_sensor
           state: 100.0
-      - logger.log: "SoC reset to 100%" 
+      - logger.log: "SoC reset to 100%"
