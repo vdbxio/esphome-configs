@@ -1,0 +1,43 @@
+# PwrTool 500 BLE Server
+# VDBX.io / @clomads / CC-BY-SA 4.0
+#
+# this is a starter file to broadcast the PwrTool 500's power data to a remote
+# device via BLE - example: mobile app or LVGL display
+#
+# this is likely broken and doens't work fully - plz help!
+
+
+esp32_ble_server:
+  manufacturer: "VDBX.io"
+  model: "PwrTool 500"
+  appearance: 0x01E # Generic Power Device
+  manufacturer_data: [0x4C, 0, 0x23, 77, 0xF0 ]
+  on_connect:
+    - lambda: |-
+        ESP_LOGD("BLE", "Connection from %d", id);
+  on_disconnect:
+    - lambda: |-
+        ESP_LOGD("BLE", "Disconnection from %d", id);
+  services:
+    - uuid: 0000fff1-0000-1000-8000-00805f9b34fb
+      characteristics:
+        - uuid: 0000fff2-0000-1000-8000-00805f9b34fb
+          description: "Active Power"
+          read: true
+          value: "0.00"
+        - uuid: 0x2A19
+          id: battery_level
+          read: true
+          value: "100"
+        - uuid: 0x2AE0
+          id: average_current
+          read: true
+          value: "42.0"
+        - uuid: 0x2AE1
+          id: average_voltage
+          read: true
+          value: "25.4"
+        - uuid: 0x2B05
+          id: power
+          read: true
+          value: "55.2"

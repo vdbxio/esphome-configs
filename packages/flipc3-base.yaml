@@ -8,7 +8,7 @@ substitutions:
   name: "flip-c3"
   friendly_name: "FLIP-C3"
   project_name: "vdbxio.FLIP-C3"
-  project_version: "0.9.0"
+  project_version: "1.0.0"
 
 
 esphome:

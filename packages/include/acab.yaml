@@ -1,0 +1,31 @@
+
+
+
+binary_sensor:
+  # Presence based on MAC address
+  - platform: ble_presence
+    id: acab_presence
+    #mac_address: 0x:03:4d:*:*:*:*
+    name: "ACAB Presence"
+    #min_rssi: -80dB
+    
+esp32_ble_tracker:
+  on_ble_manufacturer_data_advertise:
+    - manufacturer_id: 034D
+      then:
+        - lambda: |-
+            ESP_LOGD("ble_adv", "New BLE device");
+            ESP_LOGD("ble_adv", "  address: %s", x.address_str().c_str());
+            ESP_LOGD("ble_adv", "  name: %s", x.get_name().c_str());
+            ESP_LOGD("ble_adv", "  Advertised service UUIDs:");
+            for (auto uuid : x.get_service_uuids()) {
+                ESP_LOGD("ble_adv", "    - %s", uuid.to_string().c_str());
+            }
+            ESP_LOGD("ble_adv", "  Advertised service data:");
+            for (auto data : x.get_service_datas()) {
+                ESP_LOGD("ble_adv", "    - %s: (length %i)", data.uuid.to_string().c_str(), data.data.size());
+            }
+            ESP_LOGD("ble_adv", "  Advertised manufacturer data:");
+            for (auto data : x.get_manufacturer_datas()) {
+                ESP_LOGD("ble_adv", "    - %s: (length %i)", data.uuid.to_string().c_str(), data.data.size());
+            }
