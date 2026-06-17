@@ -1,9 +1,16 @@
+# LEGACY — archived as ina2xx-dev.yaml.old; use packages/parts/ina2xx.yaml
 # INA2XX 24.06-dev for PwrTool 500
 # Voidbox Industries & Chloe Madison
 # VDBX.io / @clomads
 # CC-BY-SA 4.0
-# 
+#
+# AI disclaimer: Parts of this file were written or revised with AI assistance
+#
 # ina2xx: !include  {file: "packages/parts/ina2xx-dev.yaml", vars: {address: 0x40}}
+#
+# Single hardware SKU — Mode select changes sign handling on Bus Current/Power:
+#   Battery: signed ± after offset; optional Invert (enable in HA)
+#   Load / Charger: always positive (abs after offset); Invert ignored
 
 select:
   - platform: template
@@ -18,6 +25,7 @@ select:
       - "DC Charger - Unidirectional"
 
 switch:
+  # Battery mode only — flip shunt sign without re-zeroing. Hidden until enabled in HA.
   - platform: template
     name: "Invert"
     id: invert
@@ -34,6 +42,7 @@ button:
     icon: "mdi:circle"
     on_press:
       - logger.log: "Setting Offset"
+      # Cumulative zero: add displayed current to stored offset (works on repeat presses).
       - number.set:
           id: offsetI_num
           value: !lambda 'return id(offsetI_num).state + id(rawI).state;'
@@ -55,6 +64,7 @@ button:
           args: [ '0.0f', '0.0f' ]
 
 number:
+  # Offset in raw shunt amps (before sign/abs). Editable in HA; power follows I × V.
   - platform: template
     id: offsetI_num
     name: "Offset - Current"
@@ -107,12 +117,14 @@ sensor:
       unit_of_measurement: "A"
       accuracy_decimals: 2
       filters:
+      # 1) Offset in hardware space, 2) then mode sign handling
       - lambda: !lambda 'return x - id(offsetI_num).state;'
       - lambda: !lambda |-
           if (id(mode_select).state == "Battery Monitor - Bidirectional") {
             if (id(invert).state) return {x * -1};
             return x;
           }
+          // Load/Charger: magnitude only — abs corrects shunt orientation without Invert
           return x < 0.0f ? -x : x;
     power:
       name: "Bus - Power"
@@ -121,6 +133,7 @@ sensor:
       unit_of_measurement: "W"
       accuracy_decimals: 2
       filters:
+      # INA238 power register is unsigned; derive P from corrected I × V (same sign rules as current)
       - lambda: !lambda |-
           float i = id(rawI).raw_state - id(offsetI_num).state;
           if (id(mode_select).state == "Battery Monitor - Bidirectional") {

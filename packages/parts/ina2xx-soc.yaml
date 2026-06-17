@@ -3,15 +3,46 @@
 # VDBX.io / @clomads
 # CC-BY-SA 4.0
 #
+# AI disclaimer: parts written or revised with AI assistance
+#
 # Usage: !include {file: "packages/parts/ina2xx-soc.yaml", vars: {current_id: rawI}}
 #
-# Requires packages/parts/ina2xx-dev.yaml (mode_select, rawI, rawP).
-# Most integration entities are disabled_by_default — enable in HA per use case.
+# Requires packages/parts/ina2xx.yaml (rawI, rawP). Provides Mode select → ina_unidir_mode.
+#
+# Integration / split sensors are disabled_by_default — enable the ones you need in HA:
+#   Battery: In/Out splits + Net Charge Delta + dailies as desired
+#   Load: enable Out integrators (In templates stay at 0)
+#   Charger: enable In integrators (Out templates stay at 0)
+#
+# SoC % stays visible in all modes but only updates in Battery mode (frozen on Load/Charger).
 
 substitutions:
-  current_id: "rawI"           # The ID of the current sensor (A)
+  current_id: "rawI"           # From ina2xx.yaml (after mode filters)
   soc_min: "0.0"
   soc_max: "100.0"
+
+esphome:
+  on_boot:
+    - priority: -100.0
+      then:
+        - lambda: |-
+            id(ina_unidir_mode) = (id(mode_select).current_option() != "Battery Monitor - Bidirectional");
+
+select:
+  - platform: template
+    id: mode_select
+    name: "Mode"
+    optimistic: true
+    restore_value: yes
+    entity_category: config
+    options:
+      - "Battery Monitor - Bidirectional"
+      - "DC Load - Unidirectional"
+      - "DC Charger - Unidirectional"
+    on_value:
+      - lambda: |-
+          id(ina_unidir_mode) = (id(mode_select).current_option() != "Battery Monitor - Bidirectional");
+
 
 number:
   - platform: template
@@ -38,12 +69,13 @@ globals:
     initial_value: '100.0'
 
 sensor:
+  # --- Directional splits (feed lifetime integrators below) ---
   - platform: template
     id: current_in
     name: "Current In"
     lambda: !lambda |-
-      if (id(mode_select).state == "DC Load - Unidirectional") return 0.0f;
-      if (id(mode_select).state == "DC Charger - Unidirectional") return id(rawI).state;
+      if (id(mode_select).current_option() == "DC Load - Unidirectional") return 0.0f;
+      if (id(mode_select).current_option() == "DC Charger - Unidirectional") return id(rawI).state;
       return id(rawI).state > 0.0f ? id(rawI).state : 0.0f;
     update_interval: 1s
     disabled_by_default: true
@@ -56,8 +88,8 @@ sensor:
     id: current_out
     name: "Current Out"
     lambda: !lambda |-
-      if (id(mode_select).state == "DC Charger - Unidirectional") return 0.0f;
-      if (id(mode_select).state == "DC Load - Unidirectional") return id(rawI).state;
+      if (id(mode_select).current_option() == "DC Charger - Unidirectional") return 0.0f;
+      if (id(mode_select).current_option() == "DC Load - Unidirectional") return id(rawI).state;
       return id(rawI).state < 0.0f ? -id(rawI).state : 0.0f;
     update_interval: 1s
     disabled_by_default: true
@@ -70,8 +102,8 @@ sensor:
     id: power_in
     name: "Power In"
     lambda: !lambda |-
-      if (id(mode_select).state == "DC Load - Unidirectional") return 0.0f;
-      if (id(mode_select).state == "DC Charger - Unidirectional") return id(rawP).state;
+      if (id(mode_select).current_option() == "DC Load - Unidirectional") return 0.0f;
+      if (id(mode_select).current_option() == "DC Charger - Unidirectional") return id(rawP).state;
       return id(rawP).state > 0.0f ? id(rawP).state : 0.0f;
     update_interval: 1s
     disabled_by_default: true
@@ -84,8 +116,8 @@ sensor:
     id: power_out
     name: "Power Out"
     lambda: !lambda |-
-      if (id(mode_select).state == "DC Charger - Unidirectional") return 0.0f;
-      if (id(mode_select).state == "DC Load - Unidirectional") return id(rawP).state;
+      if (id(mode_select).current_option() == "DC Charger - Unidirectional") return 0.0f;
+      if (id(mode_select).current_option() == "DC Load - Unidirectional") return id(rawP).state;
       return id(rawP).state < 0.0f ? -id(rawP).state : 0.0f;
     update_interval: 1s
     disabled_by_default: true
@@ -94,6 +126,8 @@ sensor:
     unit_of_measurement: "W"
     state_class: "measurement"
     accuracy_decimals: 2
+
+  # --- Lifetime Ah / Wh (reset only via HA or reflash; restore: true) ---
   - platform: integration
     name: "Charge In"
     id: soc_charge_in_ah
@@ -138,6 +172,8 @@ sensor:
     disabled_by_default: true
     state_class: "total_increasing"
     entity_category: diagnostic
+
+  # Signed net Ah since last SoC reset — drives SoC % in Battery mode only
   - platform: integration
     name: "Net Charge Delta"
     id: net_ah
@@ -149,7 +185,7 @@ sensor:
     disabled_by_default: true
     on_value:
       - lambda: !lambda |-
-          if (id(mode_select).state != "Battery Monitor - Bidirectional") return;
+          if (id(mode_select).current_option() != "Battery Monitor - Bidirectional") return;
           id(current_charge_ah) = id(soc_capacity_ah_num).state + x;
           float percent = 100.0f * (id(current_charge_ah) / id(soc_capacity_ah_num).state);
           if (percent < ${soc_min}) percent = ${soc_min};
@@ -159,6 +195,7 @@ sensor:
           id: soc_percent_sensor
           state: !lambda 'return id(soc_percent);'
     entity_category: diagnostic
+
   - platform: template
     id: soc_percent_sensor
     name: "State of Charge (SoC)"
@@ -168,6 +205,8 @@ sensor:
     state_class: "measurement"
     lambda: 'return id(soc_percent);'
     update_interval: 10s
+
+  # total_daily_energy integrates any sensor over h (Wh from W, Ah from A); resets at midnight
   - platform: total_daily_energy
     name: "Energy - Daily"
     power_id: rawP

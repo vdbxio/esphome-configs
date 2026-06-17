@@ -1,0 +1,49 @@
+# PwrTool 500 — User / OTA firmware
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+#
+# 
+#
+# Copied into the user's ESPHome dashboard on adopt (import_full_config from factory).
+# No dashboard_import here — packages pull from GitHub so this file works standalone.
+
+substitutions:
+  name: pwrtool500
+  friendly_name: "PwrTool 500"
+  project_name: "vdbxio.PwrTool500"
+  project_version: "1.0.0"
+
+packages:
+  flipc3: github://vdbxio/esphome-configs/packages/flipc3-base.yaml@main
+  wifi: github://vdbxio/esphome-configs/packages/flipc3-wifi.yaml@main
+  shtc3: github://vdbxio/esphome-configs/packages/parts/env_shtcx.yaml@main
+  leds: github://vdbxio/esphome-configs/packages/flipc3-leds.yaml@main
+  ina2xx: github://vdbxio/esphome-configs/packages/parts/ina2xx.yaml@main
+  ina2xx-soc: github://vdbxio/esphome-configs/packages/parts/ina2xx-soc.yaml@main
+  # qaset: github://vdbxio/esphome-configs/packages/pwrtool500-qa.yaml@main
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+output:
+  - platform: ledc
+    id: gpio_7
+    pin:
+      number: 7
+      inverted: false
+
+light:
+  - platform: monochromatic
+    name: "PwrTool MOS Dimmable"
+    disabled_by_default: true
+    output: gpio_7
+
+switch:
+  - platform: output
+    name: "PwrTool MOS Switch"
+    output: gpio_7
+
+time:
+  - platform: homeassistant
+    id: ha_time

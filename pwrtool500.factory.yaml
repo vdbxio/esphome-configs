@@ -1,0 +1,50 @@
+# PwrTool 500 — Factory firmware
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+#
+# AI disclaimer: parts written or revised with AI assistance
+#
+# Factory-only extras: INA QA RGB. On HA adopt, dashboard_import copies
+# pwrtool500.import.yaml in full (import_full_config: true) into the user's ESPHome.
+
+substitutions:
+  name: pwrtool500
+  friendly_name: "PwrTool 500"
+  project_name: "vdbxio.PwrTool500"
+  project_version: "1.0.0"
+
+packages:
+  flipc3: !include packages/flipc3-base.yaml
+  wifi: !include packages/flipc3-wifi.yaml
+  shtc3: !include packages/parts/env_shtcx.yaml
+  leds: !include packages/flipc3-leds.yaml
+  ina2xx: !include packages/parts/ina2xx.yaml
+  ina2xx-soc: !include packages/parts/ina2xx-soc.yaml
+  qaset: !include packages/pwrtool500-qa.yaml
+
+dashboard_import:
+  package_import_url: github://vdbxio/esphome-configs/pwrtool500.import.yaml@main
+  import_full_config: true
+
+output:
+  - platform: ledc
+    id: gpio_7
+    pin:
+      number: 7
+      inverted: false
+
+light:
+  - platform: monochromatic
+    name: "PwrTool MOS Dimmable"
+    disabled_by_default: true
+    output: gpio_7
+
+switch:
+  - platform: output
+    name: "PwrTool MOS Switch"
+    output: gpio_7
+
+time:
+  - platform: homeassistant
+    id: ha_time

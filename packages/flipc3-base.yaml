@@ -7,7 +7,7 @@ substitutions:
   ap_password: "GenericPassword"
   name: "flip-c3"
   friendly_name: "FLIP-C3"
-  project_name: "vdbxio.Flip-C3"
+  project_name: "vdbxio.FLIP-C3"
   project_version: "0.9.0"
 
 
@@ -41,19 +41,7 @@ button:
     name: Restart with Factory Default Settings
     disabled_by_default: True
     entity_category: diagnostic
-
-
-# # WIFI SHIT
-# wifi:
-#   ap:
-#     password: ${ap_password}
-
-# captive_portal:
-
-# web_server:
-#   local: True
-
-
+    
 sensor:
   - platform: internal_temperature
     name: "FLIP-C3 Temperature"

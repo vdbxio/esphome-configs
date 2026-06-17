@@ -15,16 +15,8 @@ wifi:
 
 captive_portal:
 
-bluetooth_proxy:
-
-improv_serial:
-
 web_server:
   #local: True
-
-
-esp32_improv:
-  authorizer: none
 
 sensor:
   - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
@@ -32,6 +24,7 @@ sensor:
     id: wifi_signal_db
     update_interval: 30s
     entity_category: "diagnostic"
+    disabled_by_default: true
   - platform: copy # Reports the WiFi signal strength in %
     source_id: wifi_signal_db
     name: "WiFi Signal Percent"
@@ -39,3 +32,4 @@ sensor:
       - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
     unit_of_measurement: "%"
     entity_category: "diagnostic"
+    disabled_by_default: true

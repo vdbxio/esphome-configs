@@ -1,83 +1,79 @@
-# INA2XX 24.06-dev for PwrTool 500
+# INA2XX for PwrTool 500
 # Voidbox Industries & Chloe Madison
 # VDBX.io / @clomads
 # CC-BY-SA 4.0
-# 
-# ina2xx: !include  {file: "packages/parts/ina2xx.yaml", vars: {address: 0x40}}
+#
+# AI disclaimer: parts written or revised with AI assistance
+#
+# ina2xx: !include {file: "packages/parts/ina2xx.yaml", vars: {address: 0x40}}
+#
+# Standalone: signed battery-style readings (offset + optional Invert).
+# With ina2xx-soc: Mode select sets ina_unidir_mode (abs for Load/Charger).
 
-time:
-  - platform: homeassistant
-    id: ha_time
+substitutions:
+  address: "0x40"
 
 globals:
-  - id: offset_power
-    type: float
+  - id: ina_unidir_mode
+    type: bool
     restore_value: yes
-    initial_value: '0.0'
-  - id: offset_current
-    type: float
-    restore_value: yes
-    initial_value: '0.0'
-
-
-esphome:
-  on_boot:
-    - priority: -200.0
-      then:
-        - sensor.template.publish:
-            id: offsetI_int
-            state: !lambda 'return id(offset_current);'
-        - sensor.template.publish:
-            id: offsetP_int
-            state: !lambda 'return id(offset_power);'
-
-
+    initial_value: 'false'
 
 switch:
+  # Battery mode only — flip shunt sign without re-zeroing. Hidden until enabled in HA.
   - platform: template
     name: "Invert"
     id: invert
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
     entity_category: config
+    disabled_by_default: true
 
 button:
   - platform: template
-    name: Set Zero Offset
+    name: Offset - Set
     id: zero_offset
     entity_category: config
     icon: "mdi:circle"
     on_press:
       - logger.log: "Setting Offset"
-      - sensor.template.publish:
-          id: offsetI_int
-          state: !lambda 'return id(offset_current) + id(rawI).state;'
-      - sensor.template.publish:
-          id: offsetP_int
-          state: !lambda 'return id(offset_power) + id(rawP).state;'
+      - number.set:
+          id: offsetI_num
+          value: !lambda 'return id(offsetI_num).state + id(rawI).state;'
       - logger.log:
           format: "Current - %.1f / Power - %.1f"
-          args: [ 'id(offset_current) + id(rawI).state', 'id(offset_power) + id(rawP).state' ]
+          args: [ 'id(offsetI_num).state', 'id(offsetI_num).state * id(rawV).state' ]
   - platform: template
-    name: Clear Zero Offset
+    name: Offset - Clear
     id: clear_offset
     entity_category: config
     icon: "mdi:circle"
     on_press:
       - logger.log: "Clearing Offset"
-      - sensor.template.publish:
-          id: offsetI_int
-          state: 0
-      - sensor.template.publish:
-          id: offsetP_int
-          state: 0
+      - number.set:
+          id: offsetI_num
+          value: 0.0
       - logger.log:
           format: "Current - %.1f / Power - %.1f"
           args: [ '0.0f', '0.0f' ]
 
-
-
-
+number:
+  - platform: template
+    id: offsetI_num
+    name: "Offset - Current"
+    initial_value: 0.0
+    min_value: -500.0
+    max_value: 500.0
+    step: 0.01
+    optimistic: true
+    restore_value: yes
+    device_class: "current"
+    unit_of_measurement: "A"
+    entity_category: config
+    on_value:
+      - logger.log:
+          format: "Current Offset set to %.1f"
+          args: [ 'id(offsetI_num).state' ]
 
 sensor:
   - platform: ina2xx_i2c
@@ -90,88 +86,47 @@ sensor:
     adc_time: 4120 us
     adc_averaging: 128
     update_interval: 100ms
-    # For 228/229:
-    # energy: "Energy - Raw"
-    # energy_joules: "Energy Joules - Raw"
-    # charge: "Charge - Raw"
-    # charge_coulombs: "Charge Coul - Raw"
     shunt_voltage:
-      name: "Voltage - Shunt"
+      name: "Shunt - Voltage"
       device_class: "voltage"
       unit_of_measurement: "mV"
       accuracy_decimals: 3
-      disabled_by_default: True
+      disabled_by_default: true
     bus_voltage:
-      name: "Voltage - Bus"
+      name: "Bus - Voltage"
       id: rawV
       device_class: "voltage"
       unit_of_measurement: "V"
       accuracy_decimals: 3
     current:
-      name: "Current - Raw"
+      name: "Bus - Current"
       id: rawI
       device_class: "current"
       unit_of_measurement: "A"
       accuracy_decimals: 2
       filters:
+      - lambda: !lambda 'return x - id(offsetI_num).state;'
       - lambda: !lambda |-
-          if (id(invert).state) return {x * -1};
-          return x;
-      - lambda: !lambda 'return x - id(offset_current);'
-      
-
+          if (!id(ina_unidir_mode)) {
+            if (id(invert).state) return {x * -1};
+            return x;
+          }
+          return x < 0.0f ? -x : x;
     power:
-      name: "Power - Raw"
+      name: "Bus - Power"
       id: rawP
       device_class: "power"
       unit_of_measurement: "W"
       accuracy_decimals: 2
       filters:
       - lambda: !lambda |-
-          if (id(invert).state) return {x * -1};
-          return x;
-      - lambda: !lambda 'return x - id(offset_power);'
+          float i = id(rawI).get_raw_state() - id(offsetI_num).state;
+          if (!id(ina_unidir_mode)) {
+            if (id(invert).state) i *= -1;
+            return i * id(rawV).state;
+          }
+          if (i < 0.0f) i = -i;
+          return i * id(rawV).state;
     temperature:
       name: "Temperature - Shunt"
       accuracy_decimals: 2
-  - platform: total_daily_energy
-    name: "Energy - Daily"
-    power_id: rawP
-    accuracy_decimals: 2
-  - platform: template
-    id: offsetI_int
-    name: "Current - Offset"
-    accuracy_decimals: 2
-    device_class: "current"
-    unit_of_measurement: "A"
-    entity_category: diagnostic
-    on_value:
-      - logger.log:
-          format: "Current Offset set to %.1f"
-          args: [ 'id(offsetI_int).state' ]
-      - globals.set:
-          id: offset_current
-          value: !lambda 'return x;'
-  - platform: template
-    id: offsetP_int
-    name: "Power - Offset"
-    accuracy_decimals: 2
-    device_class: "power"
-    unit_of_measurement: "W"
-    entity_category: diagnostic
-    on_value:
-      - logger.log:
-          format: "Power Offset set to %.1f"
-          args: [ 'id(offsetP_int).state' ]
-      - globals.set:
-          id: offset_power
-          value: !lambda 'return x;'
-
-
-
-
-
-
-
-
-
