@@ -10,8 +10,9 @@
 # Standalone: signed battery-style readings (offset + optional Invert).
 # With ina2xx-soc: Mode select sets ina_unidir_mode (abs for Load/Charger).
 
+# Default I2C address for PwrTool 500 INA238. Override in parent substitutions if needed.
 substitutions:
-  address: "0x40"
+  ina_address: 0x40
 
 globals:
   - id: ina_unidir_mode
@@ -78,7 +79,7 @@ number:
 sensor:
   - platform: ina2xx_i2c
     id: ina23x
-    address: ${address} # default: 0x40
+    address: ${ina_address}
     shunt_resistance: 0.00015 ohm
     model: INA238
     max_current: 500 A
