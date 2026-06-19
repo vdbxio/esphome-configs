@@ -52,6 +52,8 @@ jobs:
       - name: Layout per-product firmware on Pages
         run: |
           set -euo pipefail
+          echo "Release assets:"
+          ls -la output/firmware-staging || true
           for product in pwrtool500 flip-c3; do
             dest="output/firmware/${product}"
             mkdir -p "$dest"
@@ -66,13 +68,12 @@ jobs:
                   ;;
               esac
             done < <(find output/firmware-staging -maxdepth 3 -type f -name "${product}*" -print0)
-            # Release may already be normalized; script is idempotent
             bash .github/scripts/normalize-firmware-names.sh "$dest"
             if [ -f "${dest}/manifest.json" ]; then
               echo "${product}: → firmware/${product}/manifest.json"
               ls -la "$dest"
             else
-              echo "${product}: WARNING — no manifest found" >&2
+              echo "${product}: WARNING — no manifest (expected ${product}.manifest.json on release)" >&2
             fi
           done
           rm -rf output/firmware-staging

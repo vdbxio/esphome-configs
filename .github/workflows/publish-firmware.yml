@@ -47,7 +47,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: files
-          merge-multiple: true
+          # One subdir per matrix job (flip-c3/, pwrtool500/). merge-multiple collides
+          # on output/0.9.3/ and leaves a single 0.9.3.manifest.json.
 
       - name: Package release assets
         env:
@@ -55,29 +56,29 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p output
-          # Same layout as esphome/workflows upload-to-gh-release (per-device / version dirs)
-          pushd files
-          for device in *; do
-            [ -d "$device" ] || continue
-            pushd "$device"
-            if [ "$device" != "$VERSION" ]; then
-              pushd "$VERSION"
-              out="../../../output/"
-            else
-              out="../../output/"
-            fi
-            cp manifest.json "${out}${device}.manifest.json"
-            for bin in *.bin *.elf; do
+          shopt -s nullglob
+          # ESPHome workflows: files/<device>/<version>/manifest.json + bins
+          for device_dir in files/*/; do
+            device=$(basename "$device_dir")
+            [ "$device" = "$VERSION" ] && continue
+            version_dir="${device_dir}${VERSION}/"
+            [ -d "$version_dir" ] || { echo "skip $device: no ${VERSION}/" >&2; continue; }
+            [ -f "${version_dir}manifest.json" ] || { echo "skip $device: no manifest" >&2; continue; }
+            cp "${version_dir}manifest.json" "output/${device}.manifest.json"
+            for bin in "${version_dir}"*.bin "${version_dir}"*.elf; do
               [ -f "$bin" ] || continue
-              md5sum "$bin" | awk '{print $1}' > "${out}${bin}.md5"
-              sha256sum "$bin" | awk '{print $1}' > "${out}${bin}.sha256"
-              cp "$bin" "$out"
+              base=$(basename "$bin")
+              md5sum "$bin" | awk '{print $1}' > "output/${base}.md5"
+              sha256sum "$bin" | awk '{print $1}' > "output/${base}.sha256"
+              cp "$bin" "output/"
             done
-            if [ "$device" != "$VERSION" ]; then popd; fi
-            popd
+            echo "packaged: $device"
           done
-          popd
-          # ESPHome 2026.6+ embeds chip in filenames — remove for stable names
+          if ! compgen -G "output/*.manifest.json" > /dev/null; then
+            echo "No manifests packaged — artifact layout:" >&2
+            find files -type f | head -50 >&2
+            exit 1
+          fi
           bash .github/scripts/normalize-firmware-names.sh output
           ls -la output/
 
