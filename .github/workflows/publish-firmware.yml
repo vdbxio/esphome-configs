@@ -18,16 +18,15 @@ jobs:
     uses: esphome/workflows/.github/workflows/build.yml@2026.4.1
     with:
       #### Modify below here to match your project ####
-      # Newline-separated list — one ESPHome compile job per file
+      # flip-c3.yaml — FLIP-C3 web installer (no device OTA)
+      # pwrtool500.factory.yaml — ships on device; managed OTA via manifest
       files: |
-        flip-c3.yaml             # FLIP-C3: web installer manifest + bins (no device OTA)
-        pwrtool500.factory.yaml  # PwrTool: ships on device; managed OTA via manifest
-      # Pin ESPHome CLI version used inside the Docker build image
+        flip-c3.yaml
+        pwrtool500.factory.yaml
       esphome-version: 2026.6.0
-      #### Per-product Pages URLs: firmware/${name}/manifest.json
 
-      # Written into manifest.json ota.summary (optional, shown in HA update UI)
-      release-summary: ${{ github.event.release.body }}
+      # ota.summary in manifest — keep single-line; multiline release.body breaks build-action heredoc
+      release-summary: ${{ github.event.release.tag_name }}
       # Written into manifest.json ota.release_url
       release-url: ${{ github.event.release.html_url }}
       # sed replaces "version: dev" in yaml before compile; also manifest "version" field
