@@ -48,23 +48,27 @@ jobs:
       - name: Layout per-product firmware on Pages
         run: |
           set -euo pipefail
-          # Stable URLs (overwrite each release):
-          #   .../firmware/pwrtool500/manifest.json  — managed OTA + web tools
-          #   .../firmware/flip-c3/manifest.json     — ESP Web Tools installer only
+          # ESPHome 2026.6+ names: {product}.manifest.json, {product}-esp32c3.ota.bin, etc.
+          # Devices expect stable URL: firmware/{product}/manifest.json
           for product in pwrtool500 flip-c3; do
             dest="output/firmware/${product}"
             mkdir -p "$dest"
             while IFS= read -r -d '' f; do
-              cp "$f" "$dest/"
-            done < <(find output/firmware-staging -type f -name "${product}.*" -print0)
-            while IFS= read -r -d '' m; do
-              dir=$(dirname "$m")
-              if compgen -G "${dir}/${product}.*" > /dev/null; then
-                cp "$m" "${dest}/manifest.json"
-                echo "${product}: manifest + bins → firmware/${product}/"
-                break
-              fi
-            done < <(find output/firmware-staging -name manifest.json -print0)
+              base=$(basename "$f")
+              case "$base" in
+                "${product}.manifest.json"|manifest.json)
+                  cp "$f" "${dest}/manifest.json"
+                  ;;
+                *)
+                  cp "$f" "$dest/"
+                  ;;
+              esac
+            done < <(find output/firmware-staging -maxdepth 3 -type f -name "${product}*" -print0)
+            if [ -f "${dest}/manifest.json" ]; then
+              echo "${product}: → firmware/${product}/manifest.json"
+            else
+              echo "${product}: WARNING — no manifest found" >&2
+            fi
           done
           rm -rf output/firmware-staging
 
