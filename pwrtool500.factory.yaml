@@ -50,6 +50,14 @@ switch:
   - platform: output
     name: "PwrTool MOS Switch"
     output: gpio_7
+  - platform: template
+    name: "Test Switch"
+    id: test_switch
+    turn_on_action:
+      - logger.log: "Test Switch On"
+    turn_off_action:
+      - logger.log: "Test Switch Off"
+    optimistic: true
 
 time:
   - platform: homeassistant
