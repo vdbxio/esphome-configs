@@ -1,55 +1,57 @@
+# Deploy static site + latest release firmware to GitHub Pages.
+# Triggered only after Publish Firmware completes (not on push to main).
+# Stable manifest URLs (overwrite each release):
+#   https://vdbxio.github.io/esphome-configs/firmware/pwrtool500/manifest.json
+#   https://vdbxio.github.io/esphome-configs/firmware/flip-c3/manifest.json
+
 name: Publish Pages
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'static/**'
-      - '.github/workflows/publish-pages.yml'
   workflow_run:
     workflows:
-      - Publish Firmware
+      - Publish Firmware  # Only redeploy Pages after a release build finishes
     types:
-      - completed
+      - completed         # Runs even if Publish Firmware failed — check logs if stale
   pull_request:
     paths:
       - 'static/**'
-      - '.github/workflows/publish-pages.yml'
-
+      - '.github/workflows/publish-pages.yml' # PR: build job only, publish job skipped
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: true  # New push/release supersedes in-flight deploy
 
 jobs:
+  # Stage Jekyll site + firmware from latest GitHub Release into one Pages artifact
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
+      # Final Pages tree root — Jekyll output + firmware/ subdirs land here
       - run: mkdir -p output/firmware
 
+      # Compile static/ through Jekyll (GitHub Pages-compatible)
       - name: Build
         uses: actions/jekyll-build-pages@v1
         with:
-          source: ./static
-          destination: ./output
+          source: ./static       # _config.yml, index.html, etc.
+          destination: ./output  # Becomes site root on Pages
 
+      # Download every file attached to the newest published release
       - name: Fetch firmware files
-        uses: robinraju/release-downloader@v1
+        uses: robinraju/release-downloader@v1.13
         with:
-          latest: true
-          fileName: '*'
-          out-file-path: output/firmware-staging
+          latest: true              # Most recent non-draft release
+          fileName: '*'             # All assets (.bin, .manifest.json, .md5, .elf, …)
+          out-file-path: output/firmware-staging  # Flat or version-subfolder layout
 
+      # Layout: firmware/{product}/manifest.json + bins (no -esp32c3 in names)
       - name: Layout per-product firmware on Pages
         run: |
           set -euo pipefail
-          # ESPHome 2026.6+ names: {product}.manifest.json, {product}-esp32c3.ota.bin, etc.
-          # Devices expect stable URL: firmware/{product}/manifest.json
           for product in pwrtool500 flip-c3; do
             dest="output/firmware/${product}"
             mkdir -p "$dest"
@@ -64,36 +66,41 @@ jobs:
                   ;;
               esac
             done < <(find output/firmware-staging -maxdepth 3 -type f -name "${product}*" -print0)
+            # Release may already be normalized; script is idempotent
+            bash .github/scripts/normalize-firmware-names.sh "$dest"
             if [ -f "${dest}/manifest.json" ]; then
               echo "${product}: → firmware/${product}/manifest.json"
+              ls -la "$dest"
             else
               echo "${product}: WARNING — no manifest found" >&2
             fi
           done
           rm -rf output/firmware-staging
 
+      # Hand off output/ to the publish job via GitHub Pages deployment API
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: output
-          retention-days: 1
+          retention-days: 1  # Short-lived; deploy job consumes immediately
 
+  # Push artifact to live GitHub Pages (main + workflow_run only)
   publish:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request'  # PRs validate build without going live
     name: Publish
     runs-on: ubuntu-latest
     needs:
       - build
     permissions:
-      pages: write
-      id-token: write
+      pages: write    # Deploy to Pages
+      id-token: write # OIDC auth to Pages API
     environment:
-      name: github-pages
+      name: github-pages  # Uses repo Settings → Environments → github-pages URL
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

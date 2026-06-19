@@ -1,14 +1,18 @@
+# Validate that ESPHome configs compile on PRs and nightly.
+# Does not flash hardware or publish firmware — compile-only smoke test.
+
 name: CI
 
 on:
   pull_request:
     paths:
-      - '*.yaml'
+      - '*.yaml'                    # Only run when configs change
       - '.github/workflows/ci.yml'
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'             # Midnight UTC — catch ESPHome "latest" breakage
 
 concurrency:
+  # One run per PR; cancel outdated commits on the same PR
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
@@ -17,27 +21,31 @@ jobs:
     name: Building ${{ matrix.file }} / ${{ matrix.esphome-version }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
-      max-parallel: 3
+      fail-fast: false   # Keep building other matrix legs if one yaml fails
+      max-parallel: 3    # Cap concurrent compiles (ESPHome builds are heavy)
       matrix:
         #### Modify below here to match your project ####
+        # Stem only — .yaml appended in build step below
         file:
-          - flip-c3
-          - flip-c3.import
-          - pwrtool500.factory
-          - pwrtool500.import
+          - flip-c3              # Dev baseline (dash-import, local packages)
+          - flip-c3.import       # Dashboard adopt template (github packages)
+          - pwrtool500.factory   # Factory firmware (managed OTA, qaset)
+          - pwrtool500.import    # Dashboard adopt template (no manifest OTA)
         #### Modify above here to match your project ####
 
         esphome-version:
-          - latest
+          - latest               # Floats to newest ESPHome on each run
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      # import.yaml files use !secret wifi_ssid / wifi_password — not available in CI
       - name: Stub secrets for import YAML
         run: |
           printf '%s\n' 'wifi_ssid: "ci"' 'wifi_password: "ci"' > secrets.yaml
+
       - name: ESPHome ${{ matrix.esphome-version }}
-        uses: esphome/build-action@v7
+        uses: esphome/build-action@v7.2.0
         with:
-          yaml-file: ${{ matrix.file }}.yaml
-          version: ${{ matrix.esphome-version }}
+          yaml-file: ${{ matrix.file }}.yaml  # e.g. pwrtool500.factory.yaml
+          version: ${{ matrix.esphome-version }}  # ESPHome pip version in container
