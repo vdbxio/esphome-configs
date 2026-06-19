@@ -1,0 +1,21 @@
+# Managed OTA via manifest (factory / standalone devices)
+# Voidbox Industries & Chloe Madison — VDBX.io / @clomads — CC-BY-SA 4.0
+#
+# PwrTool 500 factory only — FLIP-C3 uses the same Pages layout but no http_request OTA on device.
+# Stable manifest URL: ${ota_manifest_base}/${name}/manifest.json
+# Requires ESPHome 2024.6+ (http_request update + ota.http_request).
+
+substitutions:
+  ota_manifest_base: "https://vdbxio.github.io/esphome-configs/firmware"
+
+http_request:
+  buffer_size_rx: 2048
+
+ota:
+  - platform: http_request
+
+update:
+  - platform: http_request
+    name: "Firmware Update"
+    source: "${ota_manifest_base}/${name}/manifest.json"
+    entity_category: config

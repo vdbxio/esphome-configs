@@ -5,18 +5,24 @@
 #
 # AI disclaimer: parts written or revised with AI assistance
 #
-# Factory-only extras: INA QA RGB. On HA adopt, dashboard_import copies
-# pwrtool500.import.yaml in full (import_full_config: true) into the user's ESPHome.
+# Factory-only: INA QA RGB, managed manifest OTA (vdbx-managed-ota).
+# On HA adopt, dashboard_import copies pwrtool500.import.yaml (no manifest OTA;
+# adopters use ESPHome compile/upload). Keep device blocks below in sync with import.
 
 substitutions:
   name: pwrtool500
   friendly_name: "PwrTool 500"
   project_name: "vdbxio.PwrTool500"
-  project_version: "1.0.0"
+  project_version: dev
+
+esphome:
+  project:
+    version: dev
 
 packages:
   flipc3: !include packages/flipc3-base.yaml
   wifi: !include packages/flipc3-wifi.yaml
+  ota: !include packages/vdbx-managed-ota.yaml
   shtc3: !include packages/parts/env_shtcx.yaml
   leds: !include packages/flipc3-leds.yaml
   ina2xx: !include packages/parts/ina2xx.yaml

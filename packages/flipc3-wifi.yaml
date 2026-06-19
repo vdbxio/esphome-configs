@@ -6,7 +6,7 @@ substitutions:
 api:
 
 ota:
-  platform: esphome
+  - platform: esphome
 # WIFI Stuff
 wifi:
   # output_power: 8.5dB

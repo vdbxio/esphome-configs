@@ -15,9 +15,9 @@ jobs:
       #### Modify below here to match your project ####
       files: |
         flip-c3.yaml
-      esphome-version: 2025.7.1
-      combined-name: vdbx-releases
-      #### Modify above here to match your project ####
+        pwrtool500.factory.yaml
+      esphome-version: 2026.6.0
+      #### Per-product manifests on Pages: firmware/${name}/manifest.json (PwrTool OTA only)
 
       release-summary: ${{ github.event.release.body }}
       release-url: ${{ github.event.release.html_url }}

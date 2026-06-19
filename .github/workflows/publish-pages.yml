@@ -43,7 +43,30 @@ jobs:
         with:
           latest: true
           fileName: '*'
-          out-file-path: output/firmware
+          out-file-path: output/firmware-staging
+
+      - name: Layout per-product firmware on Pages
+        run: |
+          set -euo pipefail
+          # Stable URLs (overwrite each release):
+          #   .../firmware/pwrtool500/manifest.json  — managed OTA + web tools
+          #   .../firmware/flip-c3/manifest.json     — ESP Web Tools installer only
+          for product in pwrtool500 flip-c3; do
+            dest="output/firmware/${product}"
+            mkdir -p "$dest"
+            while IFS= read -r -d '' f; do
+              cp "$f" "$dest/"
+            done < <(find output/firmware-staging -type f -name "${product}.*" -print0)
+            while IFS= read -r -d '' m; do
+              dir=$(dirname "$m")
+              if compgen -G "${dir}/${product}.*" > /dev/null; then
+                cp "$m" "${dest}/manifest.json"
+                echo "${product}: manifest + bins → firmware/${product}/"
+                break
+              fi
+            done < <(find output/firmware-staging -name manifest.json -print0)
+          done
+          rm -rf output/firmware-staging
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

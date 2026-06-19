@@ -23,6 +23,9 @@ jobs:
         #### Modify below here to match your project ####
         file:
           - flip-c3
+          - flip-c3.import
+          - pwrtool500.factory
+          - pwrtool500.import
         #### Modify above here to match your project ####
 
         esphome-version:
@@ -30,13 +33,11 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+      - name: Stub secrets for import YAML
+        run: |
+          printf '%s\n' 'wifi_ssid: "ci"' 'wifi_password: "ci"' > secrets.yaml
       - name: ESPHome ${{ matrix.esphome-version }}
         uses: esphome/build-action@v7
         with:
           yaml-file: ${{ matrix.file }}.yaml
           version: ${{ matrix.esphome-version }}
-      # - name: ESPHome ${{ matrix.esphome-version }} Factory
-      #   uses: esphome/build-action@v7
-      #   with:
-      #     yaml-file: ${{ matrix.file }}.factory.yaml
-      #     version: ${{ matrix.esphome-version }}

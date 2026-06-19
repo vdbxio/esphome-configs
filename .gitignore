@@ -2,7 +2,10 @@
 # This is an example and may include too much for your use-case.
 # You can modify this file to suit your needs.
 /.esphome/
+**/.esphome/
 /secrets.yaml
 /venv/
-
+.DS_Store
+**/.vscode/
+/.vscode/
 
