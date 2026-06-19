@@ -25,7 +25,7 @@ jobs:
         pwrtool500.factory.yaml
       esphome-version: 2026.6.0
 
-      # ota.summary in manifest — keep single-line; multiline release.body breaks build-action heredoc
+      # ota.summary patched in upload job (release body breaks build-action heredoc)
       release-summary: ${{ github.event.release.tag_name }}
       # Written into manifest.json ota.release_url
       release-url: ${{ github.event.release.html_url }}
@@ -53,6 +53,9 @@ jobs:
       - name: Package release assets
         env:
           VERSION: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
         run: |
           set -euo pipefail
           mkdir -p output
@@ -80,6 +83,7 @@ jobs:
             exit 1
           fi
           bash .github/scripts/normalize-firmware-names.sh output
+          bash .github/scripts/patch-manifest-release-info.sh output
           ls -la output/
 
       - name: Upload files to release
