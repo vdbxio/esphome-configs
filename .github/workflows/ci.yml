@@ -37,7 +37,7 @@ jobs:
           - latest               # Floats to newest ESPHome on each run
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # import.yaml files use !secret wifi_ssid / wifi_password — not available in CI
       - name: Stub secrets for import YAML
