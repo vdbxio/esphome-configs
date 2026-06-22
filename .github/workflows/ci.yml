@@ -45,7 +45,7 @@ jobs:
           printf '%s\n' 'wifi_ssid: "ci"' 'wifi_password: "cipassword"' > secrets.yaml
 
       - name: ESPHome ${{ matrix.esphome-version }}
-        uses: esphome/build-action@v7.2.0
+        uses: esphome/build-action@v7.3.0
         with:
           yaml-file: ${{ matrix.file }}.yaml  # e.g. pwrtool500.factory.yaml
           version: ${{ matrix.esphome-version }}  # ESPHome pip version in container
