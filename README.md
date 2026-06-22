@@ -28,6 +28,7 @@ packages:
 *   usbmon.py - a script to help track down bad cables by monitoring connection stability
 
 ## Changelog
+25.07 - Working on an overhaul to all linked files and removing unnessary components when adopting into ESPHome - Staring work on Github automatic builds on release.
 
 24.09 - This is now ahead of the wiki source with some minor cleanup, target changes, and slight improvements.
 
@@ -35,7 +36,7 @@ packages:
 
 ## TODO:
 
-*   Github Task to build firmware and manifest
+*   Github Task to build firmware and manifest (in-progress)
 *   Add new remote update feature
 *   add 
 *   clean up a bit more

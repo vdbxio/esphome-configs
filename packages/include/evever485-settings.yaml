@@ -1,0 +1,427 @@
+# Internal Battery Settings Sensors - Used to sync with number entities
+sensor:
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_type_read
+    address: 0x9000
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    skip_updates: 50
+    on_value:
+      then:
+        - lambda: |-
+            id(battery_type_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_capacity_read
+    address: 0x9001
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    on_value:
+      then:
+        - lambda: |-
+            id(battery_capacity_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: temperature_compensation_coefficient_read
+    address: 0x9002
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(temperature_compensation_coefficient_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: high_voltage_disconnect_read
+    address: 0x9003
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(high_voltage_disconnect_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: charging_limit_voltage_read
+    address: 0x9004
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(charging_limit_voltage_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: over_voltage_reconnect_read
+    address: 0x9005
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(over_voltage_reconnect_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: equalization_voltage_read
+    address: 0x9006
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(equalization_voltage_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: boost_voltage_read
+    address: 0x9007
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(boost_voltage_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: float_voltage_read
+    address: 0x9008
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(float_voltage_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: boost_reconnect_voltage_read
+    address: 0x9009
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(boost_reconnect_voltage_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: low_voltage_reconnect_read
+    address: 0x900A
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(low_voltage_reconnect_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: under_voltage_recover_read
+    address: 0x900B
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(under_voltage_recover_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: under_voltage_warning_read
+    address: 0x900C
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(under_voltage_warning_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: low_voltage_disconnect_read
+    address: 0x900D
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(low_voltage_disconnect_config).publish_state(x);
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: discharging_limit_voltage_read
+    address: 0x900E
+    internal: true
+    register_type: holding
+    value_type: U_WORD
+    filters:
+      - multiply: 0.01
+    on_value:
+      then:
+        - lambda: |-
+            id(discharging_limit_voltage_config).publish_state(x);
+
+
+# Battery Settings - Number Entities for Configuration
+number:
+  - platform: template
+    id: battery_type_config
+    name: "Battery Type"
+    min_value: 0
+    max_value: 3
+    step: 1
+    mode: box
+    optimistic: true
+    # 0 = User, 1 = Sealed, 2 = Gel, 3 = Flooded
+
+  - platform: template
+    id: battery_capacity_config
+    name: "Battery Capacity"
+    min_value: 1
+    max_value: 1000
+    step: 1
+    mode: box
+    optimistic: true
+    unit_of_measurement: "Ah"
+
+  - platform: template
+    id: temperature_compensation_coefficient_config
+    name: "Temperature compensation coefficient"
+    min_value: -9.99
+    max_value: 9.99
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "mV/°C/2V"
+
+  - platform: template
+    id: high_voltage_disconnect_config
+    name: "High Voltage disconnect"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: charging_limit_voltage_config
+    name: "Charging limit voltage"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: over_voltage_reconnect_config
+    name: "Over voltage reconnect"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: equalization_voltage_config
+    name: "Equalization voltage"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: boost_voltage_config
+    name: "Boost voltage"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: float_voltage_config
+    name: "Float voltage"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: boost_reconnect_voltage_config
+    name: "Boost reconnect voltage"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: low_voltage_reconnect_config
+    name: "Low voltage reconnect"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: under_voltage_recover_config
+    name: "Under voltage recover"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: under_voltage_warning_config
+    name: "Under voltage warning"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: low_voltage_disconnect_config
+    name: "Low voltage disconnect"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+  - platform: template
+    id: discharging_limit_voltage_config
+    name: "Discharging limit voltage"
+    min_value: 11.0
+    max_value: 30.0
+    step: 0.01
+    mode: box
+    optimistic: true
+    unit_of_measurement: "V"
+
+
+# Button to send battery settings
+button:
+  - platform: template
+    name: "Send Battery Settings"
+    id: send_battery_settings
+    on_press:
+      - script.execute: send_battery_settings_script
+
+# Script to convert decimal values to hex and send via Modbus
+script:
+  - id: send_battery_settings_script
+    then:
+      - lambda: |-
+          ESP_LOGI("BatterySettings", "Converting and sending battery settings...");
+          
+          // Get the modbus controller
+          esphome::modbus_controller::ModbusController *controller = id(epever);
+          
+          // Convert decimal values to hex (multiply by 100 for voltage values, 1 for others)
+          std::vector<uint16_t> battery_settings = {
+              (uint16_t)id(battery_type_config).state,                    // 9000 Battery Type
+              (uint16_t)id(battery_capacity_config).state,                // 9001 Battery Capacity
+              (uint16_t)(id(temperature_compensation_coefficient_config).state * 100), // 9002 Temp compensation
+              (uint16_t)(id(high_voltage_disconnect_config).state * 100), // 9003 High Voltage Disconnect
+              (uint16_t)(id(charging_limit_voltage_config).state * 100),  // 9004 Charging Limit Voltage
+              (uint16_t)(id(over_voltage_reconnect_config).state * 100),  // 9005 Over Voltage Reconnect
+              (uint16_t)(id(equalization_voltage_config).state * 100),    // 9006 Equalization Voltage
+              (uint16_t)(id(boost_voltage_config).state * 100),           // 9007 Boost Voltage
+              (uint16_t)(id(float_voltage_config).state * 100),           // 9008 Float Voltage
+              (uint16_t)(id(boost_reconnect_voltage_config).state * 100), // 9009 Boost Reconnect Voltage
+              (uint16_t)(id(low_voltage_reconnect_config).state * 100),   // 900A Low Voltage Reconnect
+              (uint16_t)(id(under_voltage_recover_config).state * 100),   // 900B Under Voltage Recover
+              (uint16_t)(id(under_voltage_warning_config).state * 100),   // 900C Under Voltage Warning
+              (uint16_t)(id(low_voltage_disconnect_config).state * 100),  // 900D Low Voltage Disconnect
+              (uint16_t)(id(discharging_limit_voltage_config).state * 100) // 900E Discharging Limit Voltage
+          };
+          
+          // Log the converted values for debugging
+          ESP_LOGI("BatterySettings", "Converted values:");
+          ESP_LOGI("BatterySettings", "  Battery Type: %d", battery_settings[0]);
+          ESP_LOGI("BatterySettings", "  Battery Capacity: %d", battery_settings[1]);
+          ESP_LOGI("BatterySettings", "  Temp Compensation: %d", battery_settings[2]);
+          ESP_LOGI("BatterySettings", "  High Voltage Disconnect: %d (%.2fV)", battery_settings[3], id(high_voltage_disconnect_config).state);
+          ESP_LOGI("BatterySettings", "  Charging Limit Voltage: %d (%.2fV)", battery_settings[4], id(charging_limit_voltage_config).state);
+          ESP_LOGI("BatterySettings", "  Over Voltage Reconnect: %d (%.2fV)", battery_settings[5], id(over_voltage_reconnect_config).state);
+          ESP_LOGI("BatterySettings", "  Equalization Voltage: %d (%.2fV)", battery_settings[6], id(equalization_voltage_config).state);
+          ESP_LOGI("BatterySettings", "  Boost Voltage: %d (%.2fV)", battery_settings[7], id(boost_voltage_config).state);
+          ESP_LOGI("BatterySettings", "  Float Voltage: %d (%.2fV)", battery_settings[8], id(float_voltage_config).state);
+          ESP_LOGI("BatterySettings", "  Boost Reconnect Voltage: %d (%.2fV)", battery_settings[9], id(boost_reconnect_voltage_config).state);
+          ESP_LOGI("BatterySettings", "  Low Voltage Reconnect: %d (%.2fV)", battery_settings[10], id(low_voltage_reconnect_config).state);
+          ESP_LOGI("BatterySettings", "  Under Voltage Recover: %d (%.2fV)", battery_settings[11], id(under_voltage_recover_config).state);
+          ESP_LOGI("BatterySettings", "  Under Voltage Warning: %d (%.2fV)", battery_settings[12], id(under_voltage_warning_config).state);
+          ESP_LOGI("BatterySettings", "  Low Voltage Disconnect: %d (%.2fV)", battery_settings[13], id(low_voltage_disconnect_config).state);
+          ESP_LOGI("BatterySettings", "  Discharging Limit Voltage: %d (%.2fV)", battery_settings[14], id(discharging_limit_voltage_config).state);
+          
+          // Create modbus command to write multiple registers starting at 0x9000
+          esphome::modbus_controller::ModbusCommandItem set_battery_command =
+              esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(
+                  controller, 0x9000, battery_settings.size(), battery_settings);
+          
+          // Queue the command
+          controller->queue_command(set_battery_command);
+          
+          ESP_LOGI("BatterySettings", "Battery settings command queued successfully");

@@ -24,7 +24,7 @@ def get_connected_boards():
     esp_ports = []
     
     for port in all_ports:
-        if "Bluetooth-Incoming-Port" not in port.device:
+        if "Bluetooth-Incoming-Port" not in port.device and "debug-console" not in port.device:
             if "CH340" in port.description or "CP210x" in port.description:
                 esp_ports.append(port.device)
             elif not re.search(r"(AMA|ACM|Bluetooth|IrDA)", port.device, re.IGNORECASE):

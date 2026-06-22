@@ -1,0 +1,1275 @@
+substitutions:
+  updates: 2s
+  unique_id: epever
+esp32:
+  board: esp-wrover-kit
+  framework:
+    type: arduino
+
+esphome:
+  name: ${unique_id}
+  
+  # platformio_options:
+  #   platform: https://github.com/platformio/platform-espressif32.git#feature/arduino-upstream
+  #   platform_packages:
+  #     - framework-arduinoespressif32@https://github.com/espressif/arduino-esp32.git#2.0.0
+  #     - platformio/tool-esptoolpy @ ~1.30100
+  #   ## not yet working needs 2.0
+  #   build_flags:
+  #     - -DCONFIG_ARDUINO_LOOP_STACK_SIZE=16384
+  #   upload_protocol: esptool
+  on_boot:
+    ## configure controller settings at setup for 24V LiFePO4
+    ## make sure priority is lower than setup_priority of modbus_controller
+    priority: -100
+    then:
+      - lambda: |-
+          // get local time and sync to controller
+          time_t now = ::time(nullptr);
+          struct tm *time_info = ::localtime(&now);
+          int seconds = time_info->tm_sec;
+          int minutes = time_info->tm_min;
+          int hour = time_info->tm_hour;
+          int day = time_info->tm_mday;
+          int month = time_info->tm_mon + 1;
+          int year = time_info->tm_year % 100;
+          esphome::modbus_controller::ModbusController *controller = id(epever);
+          // if there is no internet connection localtime returns year 70
+          if (year != 70) {
+            // create the payload
+            std::vector<uint16_t> rtc_data = {uint16_t((minutes << 8) | seconds), uint16_t((day << 8) | hour),
+                                              uint16_t((year << 8) | month)};
+            // Create a modbus command item with the time information as the payload
+            esphome::modbus_controller::ModbusCommandItem set_rtc_command =
+                esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(controller, 0x9013, 3, rtc_data);
+            // Submit the command to the send queue
+            epever->queue_command(set_rtc_command);
+            ESP_LOGI("ModbusLambda", "EPSOLAR RTC set to %02d:%02d:%02d %02d.%02d.%04d", hour, minutes, seconds, day, month,
+                    year + 2000);
+          }
+          
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 1
+  power_pin: GPIO16
+  
+# Enable logging
+logger:
+  level: DEBUG
+
+# Enable Home Assistant API
+api:
+
+ota:
+  platform: esphome
+  password: !secret epever
+
+button:
+  - platform: restart
+    name: "EPever Restart"
+
+
+    
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+
+
+uart:
+  id: mod_bus
+  tx_pin: 2
+  rx_pin: 4
+  baud_rate: 115200
+  stop_bits: 1
+  
+modbus:
+  #flow_control_pin: 23
+  send_wait_time: 200ms
+  id: mod_bus_epever
+  
+  
+modbus_controller:
+  - id: epever
+    ## the Modbus device addr
+    address: 0x1
+    modbus_id: mod_bus_epever
+    command_throttle: 200ms
+    setup_priority: -10
+    update_interval: ${updates}
+  
+
+  
+sensor:
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_type
+    address: 0x9000
+    name: "Battery Type"
+    register_type: holding
+    value_type: U_WORD
+    skip_updates: 50
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    icon: "mdi:battery"
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_capacity
+    address: 0x9001
+    name: "Battery Capacity"
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 0
+    unit_of_measurement: "Ah"
+    entity_category: diagnostic
+    icon: "mdi:battery"
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: temperature_compensation_coefficient
+    address: 0x9002
+    name: "Temperature Compensation Coefficient"
+    unit_of_measurement: "mV/°C/2V"
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:thermometer"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: high_voltage_disconnect
+    address: 0x9003
+    name: "01 - High Voltage Disconnect"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:lightning-bolt"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: charging_limit_voltage
+    address: 0x9004
+    name: "02 - Charging Limit Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-charging"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: over_voltage_reconnect
+    address: 0x9005
+    name: "03 - Over Voltage Reconnect"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:lightning-bolt-outline"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: equalization_voltage
+    address: 0x9006
+    name: "04 - Equalization Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-charging-100"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: boost_voltage
+    address: 0x9007
+    name: "05 - Boost Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-charging-50"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: float_voltage
+    address: 0x9008
+    name: "06 - Float Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-charging-10"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: boost_reconnect_voltage
+    address: 0x9009
+    name: "07 - Boost Reconnect Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-charging-30"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: low_voltage_reconnect
+    address: 0x900A
+    name: "08 - Low Voltage Reconnect"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-alert"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: under_voltage_recover
+    address: 0x900B
+    name: "09 - Low Voltage Recover"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-alert-variant"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: under_voltage_warning
+    address: 0x900C
+    name: "10 - Low Voltage Warning"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-alert-variant-outline"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: low_voltage_disconnect
+    address: 0x900D
+    name: "11 - Low Voltage Disconnect"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-remove"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: discharging_limit_voltage
+    address: 0x900E
+    name: "12 - Discharging Limit Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:battery-minus"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_temperature_warning_upper_limit
+    address: 0x9017
+    name: "Temperature - Battery Warning Upper Limit"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: holding
+    value_type: S_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:thermometer-high"
+    # new range add 'skip_updates' again
+    skip_updates: 50
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_temperature_warning_lower_limit
+    address: 0x9018
+    name: "Temperature - Battery Warning Lower Limit"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: holding
+    value_type: S_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:thermometer-low"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: controller_inner_temperature_upper_limit
+    address: 0x9019
+    name: "Temperature - Controller Upper Limit"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: holding
+    value_type: S_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:thermometer-high"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: controller_inner_temperature_upper_limit_recover
+    address: 0x901A
+    name: "Temperature - Controller Upper Limit Recover"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: holding
+    value_type: S_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:thermometer"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: power_component_temperature_upper_limit
+    address: 0x901B
+    name: "Temperature - Power Component Upper Limit"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: holding
+    value_type: S_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:thermometer-high"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: power_component_temperature_upper_limit_recover
+    address: 0x901C
+    name: "Temperature - Power Component Upper Limit Recover"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: holding
+    value_type: S_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:thermometer"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: line_impedance
+    address: 0x901D
+    name: "Line Impedance"
+    unit_of_measurement: "mΩ"
+    register_type: holding
+    value_type: U_WORD
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    icon: "mdi:resistor"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: dttv
+    address: 0x901E
+    name: "Day Time Threshold Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: holding
+    value_type: U_WORD
+    entity_category: diagnostic
+    icon: "mdi:weather-sunny"
+    filters:
+      - multiply: 0.01
+
+  #####
+  - platform: template
+    accuracy_decimals: 0
+    name: "Charge Generated Today"
+    id: charge_generated_today
+    unit_of_measurement: "Ah"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:battery-charging"
+
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: charging_mode
+    name: "Charging Mode"
+    address: 0x3008
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    icon: "mdi:battery-charging"
+
+  # - platform: modbus_controller
+  #   modbus_controller_id: epever
+  #   id: rated_current_of_load
+  #   name: "rated_current_of_load"
+  #   address: 0x300E
+  #   skip_updates: 60
+  #   unit_of_measurement: "A"
+  #   device_class: current
+  #   register_type: read
+  #   value_type: U_WORD
+  #   accuracy_decimals: 1
+  #   filters:
+  #     - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: pv_input_voltage
+    name: "PV Input Voltage"
+    address: 0x3100
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:solar-panel"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: pv_input_current
+    name: "PV Input Current"
+    address: 0x3101
+    unit_of_measurement: "A"
+    device_class: current
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 2
+    state_class: measurement
+    icon: "mdi:current-ac"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: pv_input_power
+    name: "PV Input Power"
+    address: 0x3102
+    unit_of_measurement: "W"
+    device_class: power
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:solar-power"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: charging_voltage
+    name: "Charging Voltage"
+    address: 0x3104
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:battery-charging"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: charging_current
+    name: "Charging Current"
+    address: 0x3105
+    unit_of_measurement: "A"
+    device_class: current
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:current-dc"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: charging_power
+    name: "Charging Power"
+    address: 0x3106
+    unit_of_measurement: "W"
+    device_class: power
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:battery-charging-50"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: load_voltage
+    name: "Load Voltage"
+    address: 0x310C
+    unit_of_measurement: "V"
+    device_class: voltage
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:lightbulb"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: load_current
+    name: "Load Current"
+    address: 0x310D
+    unit_of_measurement: "A"
+    device_class: current
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 2
+    state_class: measurement
+    icon: "mdi:current-ac"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: load_power
+    name: "Load Power"
+    address: 0x310E
+    unit_of_measurement: "W"
+    device_class: power
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:lightbulb-on"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_temperature
+    name: "Temperature - Battery"
+    address: 0x3110
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:thermometer"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: device_temperature
+    name: "Temperature - Device"
+    address: 0x3111
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:thermometer"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: power_components_temperature
+    name: "Temperature - Power Components"
+    address: 0x3112
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:thermometer"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_soc
+    name: "Battery SOC"
+    address: 0x311A
+    unit_of_measurement: "%"
+    device_class: battery
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 0
+    state_class: measurement
+    icon: "mdi:battery"
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: remote_battery_temperature
+    name: "Temperature - Remote Battery"
+    address: 0x311B
+    unit_of_measurement: "°C"
+    device_class: temperature
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    state_class: measurement
+    icon: "mdi:thermometer"
+    filters:
+      - multiply: 0.01
+
+  # - platform: modbus_controller
+  #   modbus_controller_id: epever
+  #   id: battery_volt_settings
+  #   name: "Remote real voltage"
+  #   address: 0x311D
+  #   unit_of_measurement: V
+  #   device_class: voltage
+  #   register_type: read
+  #   value_type: U_WORD
+  #   accuracy_decimals: 1
+  #   filters:
+  #     - multiply: 0.01
+
+
+  # - platform: modbus_controller
+  #   modbus_controller_id: epever
+  #   id: Battery_status_volt
+  #   name: "Battery status voltage"
+  #   address: 0x3200
+  #   register_type: read
+  #   value_type: U_WORD
+  #   bitmask: 7  #(Bits 0-3)
+  #   accuracy_decimals: 0
+
+  # - platform: modbus_controller
+  #   modbus_controller_id: epever
+  #   id: Battery_status_temp
+  #   name: "Battery status temerature"
+  #   address: 0x3200
+  #   register_type: read
+  #   value_type: U_WORD
+  #   bitmask: 0x38  #(Bits 4-7)
+  #   accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_status
+    name: "Battery Status"
+    address: 0x3200
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    icon: "mdi:battery"
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: Charger_status
+    name: "Charger Status"
+    address: 0x3201
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 0
+    entity_category: diagnostic
+    icon: "mdi:battery-charging"
+
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: max_pv_voltage_today
+    name: "PV Max Voltage Today"
+    address: 0x3300
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    icon: "mdi:solar-panel"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: min_pv_voltage_today
+    name: "PV Min Voltage Today"
+    address: 0x3301
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    icon: "mdi:solar-panel"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: max_battery_voltage_today
+    name: "Battery Max Voltage Today"
+    address: 0x3302
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    icon: "mdi:battery-charging-100"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: min_battery_today
+    name: "Battery Min Voltage Today"
+    address: 0x3303
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    icon: "mdi:battery-alert"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: consumed_energy_today
+    name: "Energy Consumed Today"
+    address: 0x3304
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 0
+    unit_of_measurement: "Wh"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:lightbulb"
+    filters:
+      - multiply: 10.0
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: consumed_energy_month
+    name: "Energy Consumed Month"
+    address: 0x3306
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 0
+    unit_of_measurement: "Wh"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:calendar-month"
+    filters:
+      - multiply: 10.0
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: consumed_energy_year
+    name: "Energy Consumed Year"
+    address: 0x3308
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:calendar-year"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: consumed_energy_total
+    name: "Energy Consumed Total"
+    address: 0x330A
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:chart-line"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: generated_energy_today
+    name: "Energy Generated Today"
+    address: 0x330C
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 0
+    unit_of_measurement: "Wh"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:solar-power"
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: charge_generated_today
+            state: !lambda "return x/24.0;"
+    filters:
+      - multiply: 10.0
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: generated_energy_month
+    name: "Energy Generated Month"
+    address: 0x330E
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 0
+    unit_of_measurement: "Wh"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:calendar-month"
+    filters:
+      - multiply: 10.0
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: generated_energy_year
+    name: "Energy Generated Year"
+    address: 0x3310
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:calendar-year"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: generated_energy_total
+    name: "Energy Generated Total"
+    address: 0x3312
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:chart-line"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: co2_reduction
+    name: "CO2 Reduction"
+    address: 0x3314
+    register_type: read
+    value_type: U_DWORD_R
+    accuracy_decimals: 1
+    unit_of_measurement: "kg"
+    state_class: total_increasing
+    icon: "mdi:leaf"
+    filters:
+      - multiply: 10.0
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_voltage
+    name: "Battery Voltage"
+    address: 0x331A
+    register_type: read
+    value_type: U_WORD
+    accuracy_decimals: 1
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    icon: "mdi:battery"
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: battery_current
+    name: "Battery Current"
+    address: 0x331B
+    register_type: read
+    value_type: S_DWORD_R
+    register_count: 2
+    accuracy_decimals: 2
+    unit_of_measurement: "A"
+    device_class: current
+    state_class: measurement
+    icon: "mdi:current-dc"
+    filters:
+      - multiply: 0.01
+      
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: length_of_night_minutes
+    address: 0x9065
+    internal: true
+    bitmask: 0xFF
+    unit_of_measurement: "min"
+    name: "Night Length Minutes"
+    register_type: holding
+    value_type: U_WORD
+    entity_category: diagnostic
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    id: length_of_night
+    address: 0x9065
+    bitmask: 0xFF00
+    unit_of_measurement: "min"
+    name: "Night Length"
+    register_type: holding
+    value_type: U_WORD
+    skip_updates: 50
+    entity_category: diagnostic
+    icon: "mdi:weather-night"
+    filters:
+      - lambda: return id(length_of_night_minutes).state  + ( 60 * x);
+
+binary_sensor:
+  # Charging Equipment Status (0x3201) - Single Bit Fault Indicators
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Charging MOSFET Short Circuit"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x2000
+    # no value_type needed for binary sensors
+    entity_category: diagnostic
+    icon: "mdi:alert-circle"
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Charging MOSFET Open Circuit"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x1000
+    entity_category: diagnostic
+    icon: "mdi:alert-circle"
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Anti-reverse MOSFET Short Circuit"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x0800
+    entity_category: diagnostic
+    icon: "mdi:alert-circle"
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Input Over Current"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x0400
+    entity_category: diagnostic
+    icon: "mdi:current-ac"
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Load Over Current"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x0200
+    entity_category: diagnostic
+    icon: "mdi:current-ac"
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Load Short Circuit"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x0100
+    entity_category: diagnostic
+    icon: "mdi:alert-circle"
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Load MOSFET Short Circuit"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x0080
+    entity_category: diagnostic
+    icon: "mdi:alert-circle"
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Circuit Disequilibrium"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x0040
+    entity_category: diagnostic
+    icon: "mdi:alert-circle"
+    
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "PV Input Short Circuit"
+    address: 0x3201
+    register_type: read
+    bitmask: 0x0010
+    entity_category: diagnostic
+    icon: "mdi:alert-circle"
+  
+text_sensor:
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "rtc_clock"
+    id: rtc_clock
+    internal: true
+    register_type: holding
+    address: 0x9013
+    register_count: 3
+    raw_encode: HEXBYTES
+    response_size: 6
+    entity_category: diagnostic
+    #                /*
+    #                E20 Real time clock 9013 D7-0 Sec, D15-8 Min
+    #                E21 Real time clock 9014 D7-0 Hour, D15-8 Day
+    #                E22 Real time clock 9015 D7-0 Month, D15-8 Year
+    #                */
+    on_value:
+      then:
+        - lambda: |-
+            ESP_LOGV("main", "decoding rtc hex encoded raw data: %s", x.c_str());
+            uint8_t h=0,m=0,s=0,d=0,month_=0,y = 0 ;
+            m = esphome::modbus_controller::byte_from_hex_str(x,0);
+            s = esphome::modbus_controller::byte_from_hex_str(x,1);
+            d = esphome::modbus_controller::byte_from_hex_str(x,2);
+            h = esphome::modbus_controller::byte_from_hex_str(x,3);
+            y = esphome::modbus_controller::byte_from_hex_str(x,4);
+            month_ = esphome::modbus_controller::byte_from_hex_str(x,5);
+            // Now check if the rtc time of the controller is ok and correct it
+            time_t now = ::time(nullptr);
+            struct tm *time_info = ::localtime(&now);
+            int seconds = time_info->tm_sec;
+            int minutes = time_info->tm_min;
+            int hour = time_info->tm_hour;
+            int day = time_info->tm_mday;
+            int month = time_info->tm_mon + 1;
+            int year = time_info->tm_year % 100;
+            // correct time if needed (ignore seconds)
+            if (d != day || month_ != month || y != year || h != hour || m != minutes) {
+              // create the payload
+              std::vector<uint16_t> rtc_data = {uint16_t((minutes << 8) | seconds), uint16_t((day << 8) | hour),
+                                                uint16_t((year << 8) | month)};
+              // Create a modbus command item with the time information as the payload
+              esphome::modbus_controller::ModbusCommandItem set_rtc_command = esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(epever, 0x9013, 3, rtc_data);
+              // Submit the command to the send queue
+              epever->queue_command(set_rtc_command);
+              ESP_LOGI("ModbusLambda", "EPSOLAR RTC set to %02d:%02d:%02d %02d.%02d.%04d", hour, minutes, seconds, day, month, year + 2000);
+            }
+            char buffer[20];
+            // format time as YYYY-mm-dd hh:mm:ss
+            sprintf(buffer,"%04d-%02d-%02d %02d:%02d:%02d",y+2000,month_,d,h,m,s);
+            id(template_rtc).publish_state(buffer);
+
+  - platform: template
+    name: "RTC Time"
+    id: template_rtc
+    entity_category: diagnostic
+    icon: "mdi:clock"
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Battery Voltage Status"
+    address: 0x3200
+    register_type: read
+    raw_encode: HEXBYTES
+    bitmask: 0x0F
+    entity_category: diagnostic
+    icon: "mdi:battery"
+    lambda: |-
+      uint16_t value = esphome::modbus_controller::word_from_hex_str(x, 0);
+      switch(value) {
+        case 0: return std::string("Normal");
+        case 1: return std::string("Over");
+        case 2: return std::string("Under");
+        case 3: return std::string("Over Discharge");
+        case 4: return std::string("Fault");
+        default: return std::string("Unknown");
+      }
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Battery Temperature Status"
+    address: 0x3200
+    register_type: read
+    raw_encode: HEXBYTES
+    bitmask: 0xF0
+    entity_category: diagnostic
+    icon: "mdi:thermometer"
+    lambda: |-
+      uint16_t value = esphome::modbus_controller::word_from_hex_str(x, 0);
+      uint8_t temp_status = (value >> 4) & 0x0F;
+      switch(temp_status) {
+        case 0: return std::string("Normal");
+        case 1: return std::string("Over (High)");
+        case 2: return std::string("Under (Low)");
+        default: return std::string("Unknown");
+      }
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Battery Resistance Status"
+    address: 0x3200
+    register_type: read
+    raw_encode: HEXBYTES
+    bitmask: 0x100
+    entity_category: diagnostic
+    icon: "mdi:resistor"
+    lambda: |-
+      uint16_t value = esphome::modbus_controller::word_from_hex_str(x, 0);
+      return (value & 0x100) ? std::string("Abnormal") : std::string("Normal");
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Battery Voltage ID Status"
+    address: 0x3200
+    register_type: read
+    raw_encode: HEXBYTES
+    bitmask: 0x8000
+    entity_category: diagnostic
+    icon: "mdi:alert-circle"
+    lambda: |-
+      uint16_t value = esphome::modbus_controller::word_from_hex_str(x, 0);
+      return (value & 0x8000) ? std::string("Wrong ID") : std::string("Correct ID");
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Charger Input Voltage Status"
+    address: 0x3201
+    register_type: read
+    raw_encode: HEXBYTES
+    bitmask: 0xC000
+    entity_category: diagnostic
+    icon: "mdi:lightning-bolt"
+    lambda: |-
+      uint16_t value = esphome::modbus_controller::word_from_hex_str(x, 0);
+      uint8_t input_status = (value >> 14) & 0x03;
+      switch(input_status) {
+        case 0: return std::string("Normal");
+        case 1: return std::string("No Power");
+        case 2: return std::string("High Voltage");
+        case 3: return std::string("Voltage Error");
+        default: return std::string("Unknown");
+      }
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Charger Status"
+    address: 0x3201
+    register_type: read
+    raw_encode: HEXBYTES
+    bitmask: 0x0C
+    entity_category: diagnostic
+    icon: "mdi:battery-charging"
+    lambda: |-
+      uint16_t value = esphome::modbus_controller::word_from_hex_str(x, 0);
+      uint8_t charging_status = (value >> 2) & 0x03;
+      switch(charging_status) {
+        case 0: return std::string("Discharging");
+        case 1: return std::string("Float");
+        case 2: return std::string("Boost");
+        case 3: return std::string("Equalization");
+        default: return std::string("Unknown");
+      }
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Charger Fault Status"
+    address: 0x3201
+    register_type: read
+    raw_encode: HEXBYTES
+    bitmask: 0x02
+    entity_category: diagnostic
+    icon: "mdi:alert"
+    lambda: |-
+      uint16_t value = esphome::modbus_controller::word_from_hex_str(x, 0);
+      return (value & 0x02) ? std::string("Fault") : std::string("Normal");
+
+  - platform: modbus_controller
+    modbus_controller_id: epever
+    name: "Charger Running Status"
+    address: 0x3201
+    register_type: read
+    raw_encode: HEXBYTES
+    bitmask: 0x01
+    entity_category: diagnostic
+    icon: "mdi:power"
+    lambda: |-
+      uint16_t value = esphome::modbus_controller::word_from_hex_str(x, 0);
+      return (value & 0x01) ? std::string("Running") : std::string("Standby");

@@ -1,0 +1,85 @@
+# EPEver 24V LiFePO4 (8S) Battery Settings
+# This file contains the on_boot script with optimized settings for 24V LiFePO4 batteries
+# Battery: 8S LiFePO4 (314Ah capacity)
+# Voltage ranges: 20V-29.2V (typical LiFePO4 8S range)
+
+esphome:
+  on_boot:
+    ## configure controller settings at setup for 24V LiFePO4
+    ## make sure priority is lower than setup_priority of modbus_controller
+    priority: -100
+    then:
+      - lambda: |-
+          // get local time and sync to controller
+          time_t now = ::time(nullptr);
+          struct tm *time_info = ::localtime(&now);
+          int seconds = time_info->tm_sec;
+          int minutes = time_info->tm_min;
+          int hour = time_info->tm_hour;
+          int day = time_info->tm_mday;
+          int month = time_info->tm_mon + 1;
+          int year = time_info->tm_year % 100;
+          esphome::modbus_controller::ModbusController *controller = id(epever);
+          // if there is no internet connection localtime returns year 70
+          if (year != 70) {
+            // create the payload
+            std::vector<uint16_t> rtc_data = {uint16_t((minutes << 8) | seconds), uint16_t((day << 8) | hour),
+                                              uint16_t((year << 8) | month)};
+            // Create a modbus command item with the time information as the payload
+            esphome::modbus_controller::ModbusCommandItem set_rtc_command =
+                esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(controller, 0x9013, 3, rtc_data);
+            // Submit the command to the send queue
+            epever->queue_command(set_rtc_command);
+            ESP_LOGI("ModbusLambda", "EPSOLAR RTC set to %02d:%02d:%02d %02d.%02d.%04d", hour, minutes, seconds, day, month,
+                    year + 2000);
+          }
+          // 24V LiFePO4 Battery settings
+          // Note: these values are optimized for 8S LiFePO4 (314Ah)
+          std::vector<uint16_t> battery_settings1 = {
+              0,       // 9000 Battery Type 0 = User (LiFePO4 is custom)
+              0x013A,  // 9001 Battery Cap 0x13A == 314Ah
+              0x00C8,  // 9002 Temp compensation -2V /°C/2V (LiFePO4 typical)
+              0x0B54,  // 9003 0xB54 == 2900 Over Voltage Disconnect Voltage 29.0V
+              0x0B22,  // 9004 0xB22 == 2850 Charging Limit Voltage 28.5V
+              0x0B22,  // 9005 Over Voltage Reconnect Voltage 28.5V
+              0x0B18,  // 9006 Equalize Charging Voltage 28.4V
+              0x0B0E,  // 9007 Boost Charging Voltage 28.3V
+              0x0A8C,  // 9008 Float Charging Voltage 27.0V
+              0x0A60,  // 9009 Boost Reconnect Charging Voltage 26.6V
+              0x09C4,  // 900A Low Voltage Reconnect Voltage 25.0V
+              0x0960,  // 900B Under Voltage Warning Reconnect Voltage 24.0V
+              0x0980,  // 900C Under Volt. Warning Volt 24.4V
+              0x08FC,  // 900D Low Volt. Disconnect Volt. 23.0V
+              0x08FC   // 900E Discharging Limit Voltage 23.0V
+          };
+
+          // Boost and equalization periods for LiFePO4
+          std::vector<uint16_t> battery_settings3 = {
+              0x0000,  // 906B Equalize Duration (min.) 0 (LiFePO4 doesn't need equalization)
+              0x0075   // 906C Boost Duration (aka absorb) 117 mins
+          };
+          esphome::modbus_controller::ModbusCommandItem set_battery1_command =
+              esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(controller, 0x9000, battery_settings1.size() ,
+                                                                                          battery_settings1);
+
+          esphome::modbus_controller::ModbusCommandItem set_battery3_command =
+              esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(controller, 0x906B, battery_settings3.size(),
+                                                                                          battery_settings3);
+          delay(200) ;
+          controller->queue_command(set_battery1_command);
+          delay(200) ;
+          controller->queue_command(set_battery3_command);
+          ESP_LOGI("ModbusLambda", "EPSOLAR 24V LiFePO4 Battery settings applied");
+
+# Voltage Reference for 24V LiFePO4 (8S):
+# - Over Voltage Disconnect: 29.0V (3.625V per cell)
+# - Charging Limit: 28.5V (3.56V per cell) 
+# - Over Voltage Reconnect: 28.5V (3.56V per cell)
+# - Equalization: 28.4V (3.55V per cell)
+# - Boost/Absorb: 28.3V (3.54V per cell)
+# - Float: 27.0V (3.375V per cell)
+# - Boost Reconnect: 26.6V (3.325V per cell)
+# - Low Voltage Reconnect: 25.0V (3.125V per cell)
+# - Under Voltage Warning: 24.4V (3.05V per cell)
+# - Low Voltage Disconnect: 23.0V (2.875V per cell)
+# - Discharging Limit: 23.0V (2.875V per cell)

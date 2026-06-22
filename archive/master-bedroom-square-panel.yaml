@@ -1,0 +1,3577 @@
+substitutions:
+  name: master-bedroom-square-panel
+  friendly_name: Master Bedroom Square Panel
+  display_w: "480"
+  display_h: "480"
+  disp_green: "0x7FDFAA"      # Soft mint green
+  disp_yellow: "0xFFE066"     # Muted golden yellow  
+  disp_red: "0xFF7777"        # Soft coral red
+  disp_blue: "0x77AAFF"       # Light periwinkle blue
+  disp_pink: "0xFFAACE"       # Soft rose pink
+  disp_gray: "0x666666"       # Darker mid-gray
+  disp_black: "0x000000"      # Keep as is
+  disp_white: "0xFFFFFF"      # Keep as is
+  disp_magenta: "0xDD88DD"    # Muted lavender magenta
+  disp_darkgray: "0x1A1A1A"   # Almost black (26/255)
+
+packages:
+  sdl2_platform: !include displays/packages/sdl2-platform.yaml
+  fonts: !include displays/packages/fonts.yaml
+  lvgl_theme: !include displays/packages/lvgl-theme.yaml
+  ha_entities: !include displays/packages/ha-entities.yaml
+  #display_colors: !include packages/display-colors.yaml
+  solar_simulation: !include displays/packages/solar-simulation.yaml
+  # debug_outline: !include displays/packages/debug-outline-theme.yaml
+
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+output:
+  # Backlight LED
+  - platform: ledc
+    pin: GPIO38
+    id: GPIO38
+    frequency: 100Hz
+    min_power: 0.03
+    zero_means_zero: true
+
+light:
+  - platform: monochromatic
+    output: GPIO38
+    name: Backlight
+    id: backlight
+    restore_mode: RESTORE_DEFAULT_ON
+    # on_state:
+    #   then:
+    #     #- number.set:
+    #     - lvgl.slider.update:
+    #         id: settings_display_brightness
+    #         #id: display_brightness
+    #         value: !lambda |-
+    #           return id(backlight).current_values.get_brightness() * 100;
+
+number:
+  - platform: lvgl
+    widget: settings_display_timeout
+    name: Timeout Slider
+    id: display_timeout
+    restore_value: true
+  # - platform: lvgl
+  #   widget: settings_display_brightness
+  #   name: Display brightness
+  #   id: display_brightness
+  #   restore_value: true
+
+#todo move button switches to here via i2c
+
+switch:
+  - platform: gpio
+    pin: 40
+    name: Relay
+    id: relay
+    on_turn_on:
+      then:
+        - lvgl.label.update:
+            id: lbl_relay_toggle_icon
+            text: "\U000F0521"
+        - lvgl.widget.update:
+            id: btn_relay_toggle
+            state:
+              checked: true
+    on_turn_off:
+      then:
+        - lvgl.label.update:
+            id: lbl_relay_toggle_icon
+            text: "\U000F0A19"
+        - lvgl.widget.update:
+            id: btn_relay_toggle
+            state:
+              checked: false
+
+  - platform: lvgl
+    widget: settings_display_auto_timeout_checkbox
+    name: Auto Sleep
+    restore_mode: RESTORE_DEFAULT_ON
+  - platform: lvgl
+    widget: settings_display_auto_brightness_checkbox
+    name: Auto Brightness
+    restore_mode: RESTORE_DEFAULT_ON
+
+lvgl:
+  on_idle:
+    timeout: !lambda "return (id(display_timeout).state * 1000);"
+    #timeout: !lambda "return (1 * 1000);"
+    then:
+      if:
+        condition: 
+          lambda: 'return id(settings_display_auto_timeout_checkbox).state;'
+        then:
+          - logger.log: "LVGL is idle"
+          - light.turn_off: backlight
+          - lvgl.pause:
+
+  page_wrap: true
+  pages:
+    - id: main_page
+      width: 100%
+      pad_all: 2
+      bg_image_src: bgimg
+      bg_image_opa: 1
+      widgets:
+        - tabview:
+            id: tabview_mainpage
+            position: right
+            size: 12%
+            text_font: light30
+            bg_opa: 20%
+            scrollable: false
+            text_color: 0x770077
+            tab_style:
+              bg_color: 0x333333
+              bg_opa: 50%
+              border_color: 0x111111
+              border_width: 1
+              text_color: 0x777777
+            tabs:
+              - name: "\U000F02E8" #this room
+                id: tabview_mainpage_mbr
+                text_color: 0x777777
+                widgets:
+                  - button:
+                      x: 5
+                      y: 75
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xBFD4DB
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_climate
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F001B"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "A/C"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: climate.toggle
+                            data:
+                              entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+                  - button:
+                      x: 285
+                      y: 100
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_fan_light
+                      align_to:
+                        id: btn_overview_climate
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F1798"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Fan Light"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.master_bedroom_ceiling_fan_light
+                  - button:
+                      x: 285
+                      y: 100
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xC8DCB8
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_fan
+                      align_to:
+                        id: btn_overview_fan_light
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F1797"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Fan"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: fan.toggle
+                            data:
+                              entity_id: fan.master_bedroom_ceiling_fan
+                  - slider:
+                      x: 35
+                      y: 190
+                      width: 320
+                      height: 40
+                      id: slider_master_bedroom_ceiling_fan
+                      value: 75
+                      border_color: 0xC8DCB8
+                      border_width: 1
+                      bg_opa: 0.1
+                      bg_color: 0xC8DCB8
+                      indicator:
+                        bg_opa: 0.8
+                        bg_color: 0xC8DCB8
+                      knob:
+                        bg_opa: 1
+                        bg_color: 0xC8DCB8
+                      min_value: 1
+                      max_value: 6
+                      on_release:
+                        - homeassistant.service:
+                            service: fan.set_percentage
+                            data:
+                              entity_id: fan.master_bedroom_ceiling_fan
+                              percentage: !lambda |-
+                                if (x == 1) {
+                                  return 16;
+                                } else if (x == 2) {
+                                  return 33;
+                                } else if (x == 3) {
+                                  return 50;
+                                } else if (x == 4) {
+                                  return 66;
+                                } else if (x == 5) {
+                                  return 83;
+                                } else if (x == 6) {
+                                  return 100;
+                                } else {
+                                  return 0;
+                                }
+                  - button:
+                      x: 5
+                      y: 255
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_hangers
+                      #align_to:
+                      #  id: btn_overview_climate
+                      #  align: OUT_BOTTOM_MID
+                      #  y: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F066F"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Hangers"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.wifi_plug_prd1_master_hanger_rack_switch_1
+                  - button:
+                      x: 285
+                      y: 100
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_walkway
+                      align_to:
+                        id: btn_overview_hangers
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F091D"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Walkway"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.master_bedroom_walkway
+                  - button:
+                      x: 285
+                      y: 100
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_vanity
+                      align_to:
+                        id: btn_overview_walkway
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F11E1"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Vanity"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.master_bedroom_vanity_light_vanity_lights
+                  - button:
+                      x: 285
+                      y: 100
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_toilet
+                      align_to:
+                        id: btn_overview_vanity
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F09AB"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Toilet"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.aubess_master_toilet_switch
+                  - button:
+                      x: 5
+                      y: 355
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_husbandbedside
+                      #align_to:
+                      #  id: btn_overview_hangers
+                      #  align: OUT_BOTTOM_MID
+                      #  y: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F1B20"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Husband Bedside"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.husband_s_bedside_lamp_2
+                  - button:
+                      x: 285
+                      y: 100
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_husbandglow
+                      align_to:
+                        id: btn_overview_husbandbedside
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F05BC"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Husband Glow"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.husband_sidetable_under
+                  - button:
+                      x: 285
+                      y: 100
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_wifebedside
+                      align_to:
+                        id: btn_overview_husbandglow
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F1B20"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Wife Bedside"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.wife_s_bedside_lamp_2
+                  - button:
+                      x: 285
+                      y: 100
+                      width: 87
+                      height: 87
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_overview_wifeglow
+                      align_to:
+                        id: btn_overview_wifebedside
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F05BC"
+                        - label:
+                            align: BOTTOM_MID
+                            text: "Wife Glow"
+                            text_font: roboto12
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.wife_sidetable_under
+
+
+              - name: "\U000F001B" #fan
+                id: tabview_mainpage_ac
+                scrollable: false
+                widgets:
+                  # - arc:
+                  #     align: CENTER
+                  #     arc_width: 20
+                  #     width: 350
+                  #     height: 350
+                  #     y: 30
+                  #     id: arc_ac_temp
+                  #     value: 20
+                  #     min_value: 18
+                  #     max_value: 32
+                  #     start_angle: 155
+                  #     end_angle: 25
+                  #     adjustable: true
+                  #     knob:
+                  #       arc_width: 5
+                  #       width: 5
+                  #       height: 5
+                  #     indicator:
+                  #       arc_width: 20
+
+                  # - arc:
+                  #     align: CENTER
+                  #     arc_width: 20
+                  #     width: 350
+                  #     height: 350
+                  #     y: 30
+                  #     id: arc_ac_fan
+                  #     value: 20
+                  #     min_value: 18
+                  #     max_value: 32
+                  #     start_angle: 35
+                  #     end_angle: 145
+                  #     mode: reverse
+                  #     adjustable: true
+                  #     knob:
+                  #       arc_color: 0x77cc77
+                  #       arc_width: 50
+                  #       width: 50
+                  #       height: 50
+                  #       radius: 50
+                  #     indicator:
+                  #       bg_color: 0x77cc77
+                  #       arc_color: 0x77cc77
+                  #       width: 50
+                  #       arc_width: 20
+                  
+                  - button:
+                      x: 60
+                      y: 90
+                      width: 120
+                      height: 50
+                      bg_color: 0xBFD4DB
+                      bg_opa: 50%
+                      shadow_opa: 0
+                      id: btn_ac_temp_increase
+                      widgets:
+                        - label:
+                            y: 3
+                            text_font: roboto40
+                            text_align: center
+                            align: center
+                            text: "\U000F0E03"
+                      on_press:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.ac_temp_increase_master_bedroom
+                  - obj:
+                      id: lbl_ac_temp
+                      align_to:
+                        id: btn_ac_temp_increase
+                        align: OUT_BOTTOM_MID
+                        y: 2
+                      border_width: 0
+                      border_color: red
+                      radius: 0px
+                      pad_all: 0px
+                      bg_opa: 0
+                      width: 200
+                      height: 76
+                      layout:
+                          type: FLEX
+                          flex_flow: ROW_WRAP
+                          flex_align_main: center
+                          flex_align_cross: end
+                          pad_column: 2px
+                          pad_row: 0px
+                      widgets:
+                        - label:
+                            align: center
+                            text_align: RIGHT
+                            id: lbl_ac_temp_value
+                            text_color: 0xBFD4DB
+                            text: "NA"
+                            text_font: roboto64
+                            x: 0
+                        - label:
+                            align: center
+                            text_align: LEFT
+                            id: lbl_ac_temp_symbol
+                            text_color: 0xBFD4DB
+                            text: "\U000F0504"
+                            text_font: roboto40
+                            x: 0
+                            height: 68
+                  - button:
+                      align_to:
+                        id: lbl_ac_temp
+                        align: OUT_BOTTOM_MID
+                      width: 120
+                      height: 50
+                      bg_color: 0xBFD4DB
+                      bg_opa: 50%
+                      shadow_opa: 0
+                      id: btn_ac_temp_decrease
+                      widgets:
+                        - label:
+                            y: 3
+                            text_font: roboto40
+                            text_align: center
+                            align: center
+                            text: "\U000F0E02"
+                      on_press:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.ac_temp_decrease_master_bedroom
+                  - button:
+                      x: 210
+                      y: 90
+                      width: 120
+                      height: 50
+                      bg_color: 0xC8DCB8
+                      bg_opa: 50%
+                      shadow_opa: 0
+                      id: btn_ac_fan_increase
+                      widgets:
+                        - label:
+                            y: 3
+                            text_font: roboto40
+                            text_align: center
+                            align: center
+                            text: "\U000F146E"
+                      on_press:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.ac_fan_increase_master_bedroom
+                  - obj:
+                      id: lbl_ac_fan
+                      align_to:
+                        id: btn_ac_fan_increase
+                        align: OUT_BOTTOM_MID
+                        y: 2
+                      border_width: 0
+                      border_color: red
+                      radius: 0px
+                      pad_all: 0px
+                      bg_opa: 0
+                      width: 200
+                      height: 76
+                      layout:
+                          type: FLEX
+                          flex_flow: ROW_WRAP
+                          flex_align_main: center
+                          flex_align_cross: end
+                          pad_column: 2px
+                          pad_row: 0px
+                      widgets:
+                        - label:
+                            align: center
+                            text_align: RIGHT
+                            id: lbl_ac_fan_value
+                            text_color: 0xC8DCB8
+                            text: "N/A"
+                            text_font: roboto64
+                            x: 0
+                  - button:
+                      align_to:
+                        id: lbl_ac_fan
+                        align: OUT_BOTTOM_MID
+                      width: 120
+                      height: 50
+                      bg_color: 0xC8DCB8
+                      bg_opa: 50%
+                      shadow_opa: 0
+                      id: btn_ac_fan_decrease
+                      widgets:
+                        - label:
+                            y: 3
+                            text_font: roboto40
+                            text_align: center
+                            align: center
+                            text: "\U000F146D"
+                      on_press:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.ac_fan_decrease_master_bedroom
+                  - button:
+                      id: btn_ac_swing
+                      width: 390
+                      height: 50
+                      y: 288
+                      bg_color: 0xFFFAA0
+                      bg_opa: 30%
+                      shadow_opa: 0
+                      text_color: 0x999999
+                      checked:
+                        bg_color: 0xFFFAA0
+                        bg_opa: 80%
+                        text_color: 0x333333
+                      on_press:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.ac_swing_mode_toggle_master_bedroom
+                      layout:
+                          type: FLEX
+                          flex_flow: ROW_WRAP
+                          flex_align_main: center
+                          flex_align_cross: end
+                          pad_column: 2px
+                          pad_row: 0px
+                      widgets:
+                        - label:
+                            align: center
+                            text_align: RIGHT
+                            text_font: roboto40
+                            text: "\U000F0F9E"
+                            x: 0
+                            height: 55
+                        - label:
+                            align: center
+                            text_align: LEFT
+                            text_font: roboto24
+                            text: "Swing"
+                            x: 0
+                            height: 50
+                  - button:
+                      id: btn_ac_mode_power
+                      width: 90
+                      height: 100
+                      y: 350
+                      bg_color: 0xF4CBBA
+                      bg_opa: 20%
+                      shadow_opa: 0
+                      text_color: 0x999999
+                      checked:
+                        bg_opa: 80%
+                        bg_color: 0xF4CBBA
+                        text_color: 0x333333
+                      on_press:
+                        - homeassistant.service:
+                            service: climate.set_hvac_mode
+                            data:
+                              entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+                              hvac_mode: "off"
+                      widgets:
+                        - label:
+                            align: TOP_MID
+                            text_font: roboto40
+                            text: "\U000F0425"
+                        - label:
+                            align: BOTTOM_MID
+                            text_font: roboto24
+                            text: "Power"
+                  - button:
+                      id: btn_ac_mode_cool
+                      align_to:
+                        id: btn_ac_mode_power
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      width: 90
+                      height: 100
+                      bg_color: 0xBFD4DB
+                      bg_opa: 20%
+                      shadow_opa: 0
+                      text_color: 0x999999
+                      checked:
+                        bg_opa: 80%
+                        bg_color: 0x056099
+                        text_color: 0x333333
+                      on_press:
+                        - homeassistant.service:
+                            service: climate.set_hvac_mode
+                            data:
+                              entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+                              hvac_mode: "cool"
+                      widgets:
+                        - label:
+                            align: TOP_MID
+                            text_font: roboto40
+                            text: "\U000F0717"
+                        - label:
+                            align: BOTTOM_MID
+                            text_font: roboto24
+                            text: "Cool"
+                  - button:
+                      id: btn_ac_mode_fan
+                      align_to:
+                        id: btn_ac_mode_cool
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      width: 90
+                      height: 100
+                      bg_color: 0xC8DCB8
+                      bg_opa: 20%
+                      shadow_opa: 0
+                      text_color: 0x999999
+                      checked:
+                        bg_opa: 80%
+                        bg_color: 0xC8DCB8
+                        text_color: 0xEEEEEE
+                      on_press:
+                        - homeassistant.service:
+                            service: climate.set_hvac_mode
+                            data:
+                              entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+                              hvac_mode: "fan_only"
+                      widgets:
+                        - label:
+                            align: TOP_MID
+                            text_font: roboto40
+                            text: "\U000F0210"
+                        - label:
+                            align: BOTTOM_MID
+                            text_font: roboto24
+                            text: "Fan"
+                  - button:
+                      id: btn_ac_mode_dry
+                      align_to:
+                        id: btn_ac_mode_fan
+                        align: OUT_RIGHT_MID
+                        x: 10
+                      width: 90
+                      height: 100
+                      bg_color: 0xFFD5A4
+                      bg_opa: 20%
+                      shadow_opa: 0
+                      text_color: 0x999999
+                      checked:
+                        bg_opa: 80%
+                        bg_color: 0xFFD5A4
+                        text_color: 0x333333
+                      on_press:
+                        - homeassistant.service:
+                            service: climate.set_hvac_mode
+                            data:
+                              entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+                              hvac_mode: "dry"
+                      widgets:
+                        - label:
+                            align: TOP_MID
+                            text_font: roboto40
+                            text: "\U000F058C"
+                        - label:
+                            align: BOTTOM_MID
+                            text_font: roboto24
+                            text: "Dry"
+
+
+              - name: "\U000F1576" #lighting
+                id: tabview_mainpage_lighting
+                pad_all: 8
+                scrollable: false
+                widgets:
+                  - tileview:
+                        id: tile_walkway_details
+                        x: 1
+                        y: 78
+                        width: 60
+                        height: 300
+                        bg_opa: 0
+                        radius: 0
+                        clip_corner: true
+                        scrollable: False
+                        tiles:
+                          - id: tile_walkway_details_brightness
+                            row: 0
+                            column: 0
+                            dir: ALL
+                            widgets:
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  #bg_grad: grad_colorbar
+                                  #bg_grad_color: 0xCCCCCC
+                                  bg_color: 0xFFFAA0
+                                  bg_opa: 0.3
+                                  border_width: 0
+                                  checkable: false
+                                  id: btn_walkway_details_brightness
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F0CF2" #03D8 (colour), 050F (temp)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_walkway_details
+                                          tile_id: tile_walkway_details_temp
+                                          animated: true
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 50
+                                  bg_color: 0xFFFAA0
+                                  knob:
+                                    width: 62
+                                    radius: 0
+                                    opa: transp
+                                    focused:
+                                      bg_color: 0x808080
+                                  scroll_on_focus: true
+                                  id: slider_walkway_details_brightness
+                                  indicator:
+                                    bg_color: 0xFFFAA0
+                                    bg_opa: 0.7
+                                    radius: 0
+                                  min_value: 0
+                                  max_value: 100
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_walkway_details_brightness
+                                        text:
+                                          format: "%.0f%%"
+                                          args: [ x ]
+                                  on_release:
+                                    # - logger.log:
+                                    #     format: "Slider Value on_release: %.0f"
+                                    #     args: [ 'x' ]
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.master_bedroom_walkway
+                                          brightness_pct: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_walkway_details_brightness
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "%"
+                                        text_color: 0x999999
+                          - id: tile_walkway_details_temp
+                            row: 0
+                            column: 1
+                            dir: ALL
+                            widgets:
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 3000
+                                  #bg_grad: color_bar
+                                  knob:
+                                    width: 62
+                                    radius: 10
+                                    pad_top: -30
+                                    pad_bottom: -30
+                                    opa: 1
+                                    bg_color: 0x999999
+                                    focused:
+                                      bg_color: 0xCC5E14
+                                  scroll_on_focus: true
+                                  id: slider_walkway_details_temp
+                                  indicator:
+                                    opa: transp
+                                    radius: 0
+                                  min_value: 2700
+                                  max_value: 6500
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_walkway_details_temp
+                                        text:
+                                          format: "%.0fK"
+                                          args: [ x ]
+                                  on_release:
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.master_bedroom_walkway
+                                          kelvin: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_walkway_details_temp
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "K"
+                                        text_color: 0x999999
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  bg_color: 0x1C2030
+                                  checkable: false
+                                  id: btn_walkway_details_mode_temp
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F050F" #03D8 (colour)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_walkway_details
+                                          tile_id: tile_walkway_details_brightness
+                                          animated: true
+                  - button:
+                      height: 70
+                      width: 60
+                      x: 0
+                      y: 298
+                      align_to:
+                        id: slider_walkway_details_brightness
+                        align: OUT_BOTTOM_MID
+                      radius: 0
+                      checkable: true
+                      bg_opa: 0
+                      shadow_opa: 0
+                      border_width: 1
+                      border_color: 0x777777
+                      checked:
+                        bg_opa: 0.8
+                        border_width: 0
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      id: btn_light_walkway
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: CENTER
+                            text: "\U000F091D"
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.master_bedroom_walkway
+                  - tileview:
+                        id: tile_vanity_details
+                        x: 69
+                        y: 78
+                        width: 60
+                        height: 300
+                        bg_opa: 0
+                        radius: 0
+                        clip_corner: true
+                        scrollable: False
+                        tiles:
+                          - id: tile_vanity_details_brightness
+                            row: 0
+                            column: 0
+                            dir: ALL
+                            widgets:
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  #bg_grad: grad_colorbar
+                                  #bg_grad_color: 0xCCCCCC
+                                  bg_color: 0xFFFAA0
+                                  bg_opa: 0.3
+                                  border_width: 0
+                                  checkable: false
+                                  id: btn_vanity_details_brightness
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F0CF2" #03D8 (colour), 050F (temp)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_vanity_details
+                                          tile_id: tile_vanity_details_temp
+                                          animated: true
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 50
+                                  bg_color: 0xFFFAA0
+                                  knob:
+                                    width: 62
+                                    radius: 0
+                                    opa: transp
+                                    focused:
+                                      bg_color: 0x808080
+                                  scroll_on_focus: true
+                                  id: slider_vanity_details_brightness
+                                  indicator:
+                                    bg_color: 0xFFFAA0
+                                    bg_opa: 0.7
+                                    radius: 0
+                                  min_value: 0
+                                  max_value: 100
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_vanity_details_brightness
+                                        text:
+                                          format: "%.0f%%"
+                                          args: [ x ]
+                                  on_release:
+                                    # - logger.log:
+                                    #     format: "Slider Value on_release: %.0f"
+                                    #     args: [ 'x' ]
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.master_bedroom_vanity_light_vanity_lights
+                                          brightness_pct: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_vanity_details_brightness
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "%"
+                                        text_color: 0x999999
+                          - id: tile_vanity_details_temp
+                            row: 0
+                            column: 1
+                            dir: ALL
+                            widgets:
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 3000
+                                  #bg_grad: color_bar
+                                  knob:
+                                    width: 62
+                                    radius: 10
+                                    pad_top: -30
+                                    pad_bottom: -30
+                                    opa: 1
+                                    bg_color: 0x999999
+                                    focused:
+                                      bg_color: 0xCC5E14
+                                  scroll_on_focus: true
+                                  id: slider_vanity_details_temp
+                                  indicator:
+                                    opa: transp
+                                    radius: 0
+                                  min_value: 2700
+                                  max_value: 6500
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_vanity_details_temp
+                                        text:
+                                          format: "%.0fK"
+                                          args: [ x ]
+                                  on_release:
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.master_bedroom_vanity_light_vanity_lights
+                                          kelvin: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_vanity_details_temp
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "K"
+                                        text_color: 0x999999
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  bg_color: 0x1C2030
+                                  checkable: false
+                                  id: btn_vanity_details_mode_temp
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F050F" #03D8 (colour)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_vanity_details
+                                          tile_id: tile_vanity_details_brightness
+                                          animated: true
+                  - button:
+                      height: 70
+                      width: 60
+                      x: 0
+                      y: 298
+                      align_to:
+                        id: slider_vanity_details_brightness
+                        align: OUT_BOTTOM_MID
+                      radius: 0
+                      checkable: true
+                      bg_opa: 0
+                      shadow_opa: 0
+                      border_width: 1
+                      border_color: 0x777777
+                      checked:
+                        bg_opa: 0.8
+                        border_width: 0
+                        bg_color: 0xFFFAA0
+                        text_color: 0x333333
+                      id: btn_light_vanity
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: CENTER
+                            text: "\U000F11E1"
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.master_bedroom_vanity_light_vanity_lights
+                  - tileview:
+                        id: tile_husbandbedside_details
+                        x: 137
+                        y: 78
+                        width: 60
+                        height: 300
+                        bg_opa: 0
+                        radius: 0
+                        clip_corner: true
+                        scrollable: False
+                        tiles:
+                          - id: tile_husbandbedside_details_brightness
+                            row: 0
+                            column: 0
+                            dir: ALL
+                            widgets:
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  #bg_grad: grad_colorbar
+                                  #bg_grad_color: 0xCCCCCC
+                                  bg_color: 0x59C0F0
+                                  bg_opa: 0.3
+                                  border_width: 0
+                                  checkable: false
+                                  id: btn_husbandbedside_details_brightness
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F0CF2" #03D8 (colour), 050F (temp)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_husbandbedside_details
+                                          tile_id: tile_husbandbedside_details_temp
+                                          animated: true
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 50
+                                  bg_color: 0x59C0F0
+                                  knob:
+                                    width: 62
+                                    radius: 0
+                                    opa: transp
+                                    focused:
+                                      bg_color: 0x808080
+                                  scroll_on_focus: true
+                                  id: slider_husbandbedside_details_brightness
+                                  indicator:
+                                    bg_color: 0x59C0F0
+                                    bg_opa: 0.7
+                                    radius: 0
+                                  min_value: 0
+                                  max_value: 100
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_husbandbedside_details_brightness
+                                        text:
+                                          format: "%.0f%%"
+                                          args: [ x ]
+                                  on_release:
+                                    # - logger.log:
+                                    #     format: "Slider Value on_release: %.0f"
+                                    #     args: [ 'x' ]
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.husband_s_bedside_lamp_2
+                                          brightness_pct: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_husbandbedside_details_brightness
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "%"
+                                        text_color: 0x999999
+                          - id: tile_husbandbedside_details_temp
+                            row: 0
+                            column: 1
+                            dir: ALL
+                            widgets:
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 3000
+                                  #bg_grad: color_bar
+                                  knob:
+                                    width: 62
+                                    radius: 10
+                                    pad_top: -30
+                                    pad_bottom: -30
+                                    opa: 1
+                                    bg_color: 0x999999
+                                    focused:
+                                      bg_color: 0xCC5E14
+                                  scroll_on_focus: true
+                                  id: slider_husbandbedside_details_temp
+                                  indicator:
+                                    opa: transp
+                                    radius: 0
+                                  min_value: 2700
+                                  max_value: 6500
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_husbandbedside_details_temp
+                                        text:
+                                          format: "%.0fK"
+                                          args: [ x ]
+                                  on_release:
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.husband_s_bedside_lamp_2
+                                          kelvin: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_husbandbedside_details_temp
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "K"
+                                        text_color: 0x999999
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  bg_color: 0x1C2030
+                                  checkable: false
+                                  id: btn_husbandbedside_details_mode_temp
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F050F" #03D8 (colour)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_husbandbedside_details
+                                          tile_id: tile_husbandbedside_details_brightness
+                                          animated: true
+                  - button:
+                      height: 70
+                      width: 60
+                      x: 0
+                      y: 298
+                      align_to:
+                        id: slider_husbandbedside_details_brightness
+                        align: OUT_BOTTOM_MID
+                      radius: 0
+                      checkable: true
+                      bg_opa: 0
+                      shadow_opa: 0
+                      border_width: 1
+                      border_color: 0x777777
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0x59C0F0
+                        border_width: 0
+                        text_color: 0x333333
+                      id: btn_light_husbandbedside
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: CENTER
+                            text: "\U000F1B20"
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.husband_s_bedside_lamp_2
+                  - tileview:
+                        id: tile_husbandsidetable_details
+                        x: 205
+                        y: 78
+                        width: 60
+                        height: 300
+                        bg_opa: 0
+                        radius: 0
+                        clip_corner: true
+                        scrollable: False
+                        tiles:
+                          - id: tile_husbandsidetable_details_brightness
+                            row: 0
+                            column: 0
+                            dir: ALL
+                            widgets:
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  #bg_grad: grad_colorbar
+                                  #bg_grad_color: 0xCCCCCC
+                                  bg_color: 0x59C0F0
+                                  bg_opa: 0.3
+                                  border_width: 0
+                                  checkable: false
+                                  id: btn_husbandsidetable_details_brightness
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F0CF2" #03D8 (colour), 050F (temp)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_husbandsidetable_details
+                                          tile_id: tile_husbandsidetable_details_temp
+                                          animated: true
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 50
+                                  bg_color: 0x59C0F0
+                                  knob:
+                                    width: 62
+                                    radius: 0
+                                    opa: transp
+                                    focused:
+                                      bg_color: 0x808080
+                                  scroll_on_focus: true
+                                  id: slider_husbandsidetable_details_brightness
+                                  indicator:
+                                    bg_color: 0x59C0F0
+                                    bg_opa: 0.7
+                                    radius: 0
+                                  min_value: 0
+                                  max_value: 100
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_husbandsidetable_details_brightness
+                                        text:
+                                          format: "%.0f%%"
+                                          args: [ x ]
+                                  on_release:
+                                    # - logger.log:
+                                    #     format: "Slider Value on_release: %.0f"
+                                    #     args: [ 'x' ]
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.husband_sidetable_under
+                                          brightness_pct: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_husbandsidetable_details_brightness
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "%"
+                                        text_color: 0x999999
+                          - id: tile_husbandsidetable_details_temp
+                            row: 0
+                            column: 1
+                            dir: ALL
+                            widgets:
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 3000
+                                  #bg_grad: color_bar
+                                  knob:
+                                    width: 62
+                                    radius: 10
+                                    pad_top: -30
+                                    pad_bottom: -30
+                                    opa: 1
+                                    bg_color: 0x999999
+                                    focused:
+                                      bg_color: 0xCC5E14
+                                  scroll_on_focus: true
+                                  id: slider_husbandsidetable_details_temp
+                                  indicator:
+                                    opa: transp
+                                    radius: 0
+                                  min_value: 2700
+                                  max_value: 6500
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_husbandsidetable_details_temp
+                                        text:
+                                          format: "%.0fK"
+                                          args: [ x ]
+                                  on_release:
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.husband_sidetable_under
+                                          kelvin: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_husbandsidetable_details_temp
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "K"
+                                        text_color: 0x999999
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  bg_color: 0x1C2030
+                                  checkable: false
+                                  id: btn_husbandsidetable_details_mode_temp
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F050F" #03D8 (colour)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_husbandsidetable_details
+                                          tile_id: tile_husbandsidetable_details_brightness
+                                          animated: true
+                  - button:
+                      height: 70
+                      width: 60
+                      x: 0
+                      y: 298
+                      align_to:
+                        id: slider_husbandsidetable_details_brightness
+                        align: OUT_BOTTOM_MID
+                      radius: 0
+                      checkable: true
+                      bg_opa: 0
+                      shadow_opa: 0
+                      border_width: 1
+                      border_color: 0x777777
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0x59C0F0
+                        border_width: 0
+                        text_color: 0x333333
+                      id: btn_light_husbandsidetable
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: CENTER
+                            text: "\U000F05BC"
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.husband_sidetable_under  
+                  - tileview:
+                        id: tile_wifebedside_details
+                        x: 273
+                        y: 78
+                        width: 60
+                        height: 300
+                        bg_opa: 0
+                        radius: 0
+                        clip_corner: true
+                        scrollable: False
+                        tiles:
+                          - id: tile_wifebedside_details_brightness
+                            row: 0
+                            column: 0
+                            dir: ALL
+                            widgets:
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  #bg_grad: grad_colorbar
+                                  #bg_grad_color: 0xCCCCCC
+                                  bg_color: 0xFFC6E3
+                                  bg_opa: 0.3
+                                  border_width: 0
+                                  checkable: false
+                                  id: btn_wifebedside_details_brightness
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F0CF2" #03D8 (colour), 050F (temp)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_wifebedside_details
+                                          tile_id: tile_wifebedside_details_temp
+                                          animated: true
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 50
+                                  bg_color: 0xFFC6E3
+                                  knob:
+                                    width: 62
+                                    radius: 0
+                                    opa: transp
+                                    focused:
+                                      bg_color: 0x808080
+                                  scroll_on_focus: true
+                                  id: slider_wifebedside_details_brightness
+                                  indicator:
+                                    bg_color: 0xFFC6E3
+                                    bg_opa: 0.7
+                                    radius: 0
+                                  min_value: 0
+                                  max_value: 100
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_wifebedside_details_brightness
+                                        text:
+                                          format: "%.0f%%"
+                                          args: [ x ]
+                                  on_release:
+                                    # - logger.log:
+                                    #     format: "Slider Value on_release: %.0f"
+                                    #     args: [ 'x' ]
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.wife_s_bedside_lamp_2
+                                          brightness_pct: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_wifebedside_details_brightness
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "%"
+                                        text_color: 0x999999
+                          - id: tile_wifebedside_details_temp
+                            row: 0
+                            column: 1
+                            dir: ALL
+                            widgets:
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 3000
+                                  #bg_grad: color_bar
+                                  knob:
+                                    width: 62
+                                    radius: 10
+                                    pad_top: -30
+                                    pad_bottom: -30
+                                    opa: 1
+                                    bg_color: 0x999999
+                                    focused:
+                                      bg_color: 0xCC5E14
+                                  scroll_on_focus: true
+                                  id: slider_wifebedside_details_temp
+                                  indicator:
+                                    opa: transp
+                                    radius: 0
+                                  min_value: 2700
+                                  max_value: 6500
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_wifebedside_details_temp
+                                        text:
+                                          format: "%.0fK"
+                                          args: [ x ]
+                                  on_release:
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.wife_s_bedside_lamp_2
+                                          kelvin: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_wifebedside_details_temp
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "K"
+                                        text_color: 0x999999
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  bg_color: 0x1C2030
+                                  checkable: false
+                                  id: btn_wifebedside_details_mode_temp
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F050F" #03D8 (colour)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_wifebedside_details
+                                          tile_id: tile_wifebedside_details_brightness
+                                          animated: true
+                  - button:
+                      height: 70
+                      width: 60
+                      x: 0
+                      y: 298
+                      align_to:
+                        id: slider_wifebedside_details_brightness
+                        align: OUT_BOTTOM_MID
+                      radius: 0
+                      checkable: true
+                      bg_opa: 0
+                      shadow_opa: 0
+                      border_width: 1
+                      border_color: 0x777777
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFC6E3
+                        border_width: 0
+                        text_color: 0x333333
+                      id: btn_light_wifebedside
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: CENTER
+                            text: "\U000F1B20"
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.wife_s_bedside_lamp_2   
+                  - tileview:
+                        id: tile_wifesidetable_details
+                        x: 341
+                        y: 78
+                        width: 60
+                        height: 300
+                        bg_opa: 0
+                        radius: 0
+                        clip_corner: true
+                        scrollable: False
+                        tiles:
+                          - id: tile_wifesidetable_details_brightness
+                            row: 0
+                            column: 0
+                            dir: ALL
+                            widgets:
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  #bg_grad: grad_colorbar
+                                  #bg_grad_color: 0xCCCCCC
+                                  bg_color: 0xFFC6E3
+                                  bg_opa: 0.3
+                                  border_width: 0
+                                  checkable: false
+                                  id: btn_wifesidetable_details_brightness
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F0CF2" #03D8 (colour), 050F (temp)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_wifesidetable_details
+                                          tile_id: tile_wifesidetable_details_temp
+                                          animated: true
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 50
+                                  bg_color: 0xFFC6E3
+                                  knob:
+                                    width: 62
+                                    radius: 0
+                                    opa: transp
+                                    focused:
+                                      bg_color: 0x808080
+                                  scroll_on_focus: true
+                                  id: slider_wifesidetable_details_brightness
+                                  indicator:
+                                    bg_color: 0xFFC6E3
+                                    bg_opa: 0.7
+                                    radius: 0
+                                  min_value: 0
+                                  max_value: 100
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_wifesidetable_details_brightness
+                                        text:
+                                          format: "%.0f%%"
+                                          args: [ x ]
+                                  on_release:
+                                    # - logger.log:
+                                    #     format: "Slider Value on_release: %.0f"
+                                    #     args: [ 'x' ]
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.wife_sidetable_under
+                                          brightness_pct: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_wifesidetable_details_brightness
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "%"
+                                        text_color: 0x999999
+                          - id: tile_wifesidetable_details_temp
+                            row: 0
+                            column: 1
+                            dir: ALL
+                            widgets:
+                              - slider:
+                                  x: 0
+                                  y: 60
+                                  width: 60
+                                  height: 238
+                                  radius: 0
+                                  value: 3000
+                                  #bg_grad: color_bar
+                                  knob:
+                                    width: 62
+                                    radius: 10
+                                    pad_top: -30
+                                    pad_bottom: -30
+                                    opa: 1
+                                    bg_color: 0x999999
+                                    focused:
+                                      bg_color: 0xCC5E14
+                                  scroll_on_focus: true
+                                  id: slider_wifesidetable_details_temp
+                                  indicator:
+                                    opa: transp
+                                    radius: 0
+                                  min_value: 2700
+                                  max_value: 6500
+                                  on_value:
+                                    - lvgl.label.update:
+                                        id: label_wifesidetable_details_temp
+                                        text:
+                                          format: "%.0fK"
+                                          args: [ x ]
+                                  on_release:
+                                    - homeassistant.service:
+                                        service: light.turn_on
+                                        data:
+                                          entity_id: light.wife_sidetable_under
+                                          kelvin: !lambda |-
+                                            return int(x);
+                                  widgets:
+                                    - label:
+                                        id: label_wifesidetable_details_temp
+                                        text_font: ubuntumono30
+                                        bg_opa: 0.5
+                                        bg_color: 0x000060
+                                        align: CENTER
+                                        text: "K"
+                                        text_color: 0x999999
+                              - button:
+                                  x: 0
+                                  y: 0
+                                  width: 60
+                                  height: 60
+                                  radius: 0
+                                  bg_color: 0x1C2030
+                                  checkable: false
+                                  id: btn_wifesidetable_details_mode_temp
+                                  widgets:
+                                    - label:
+                                        text_font: light30
+                                        align: CENTER
+                                        text: "\U000F050F" #03D8 (colour)
+                                        text_color: 0x999999
+                                  on_press:
+                                    then:
+                                      - lvgl.tileview.select:
+                                          id: tile_wifesidetable_details
+                                          tile_id: tile_wifesidetable_details_brightness
+                                          animated: true
+                  - button:
+                      height: 70
+                      width: 60
+                      x: 0
+                      y: 298
+                      align_to:
+                        id: slider_wifesidetable_details_brightness
+                        align: OUT_BOTTOM_MID
+                      radius: 0
+                      checkable: true
+                      bg_opa: 0
+                      shadow_opa: 0
+                      border_width: 1
+                      border_color: 0x777777
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xFFC6E3
+                        border_width: 0
+                        text_color: 0x333333
+                      id: btn_light_wifesidetable
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: CENTER
+                            text: "\U000F05BC"
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.wife_sidetable_under
+
+
+              - name: "\U000F02DC" #rest of home
+                id: tabview_mainpage_restofhome
+                widgets:
+                  - button:
+                      x: 5
+                      y: 120
+                      width: 122
+                      height: 140
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xAFC4CB
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_restofhome_balconyporch
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F1054"
+                        - label:
+                            align: BOTTOM_MID
+                            text_align: CENTER
+                            text: "Balcony & Porch"
+                            width: 85
+                            long_mode: WRAP
+                            text_font: roboto20
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.balcony_door_number_light_group
+                  - button:
+                      width: 122
+                      height: 140
+                      align_to:
+                        id: btn_restofhome_balconyporch
+                        align: OUT_RIGHT_MID
+                        x: 8
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xAFC4CB
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_restofhome_diningroom
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F04A3"
+                        - label:
+                            align: BOTTOM_MID
+                            text_align: CENTER
+                            text: "Dining Room"
+                            width: 85
+                            long_mode: WRAP
+                            text_font: roboto20
+                      on_click:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.button_toggle_dining_room_full
+                  - button:
+                      width: 122
+                      height: 140
+                      align_to:
+                        id: btn_restofhome_diningroom
+                        align: OUT_RIGHT_MID
+                        x: 8
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xAFC4CB
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_restofhome_kitchen
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F0B7C"
+                        - label:
+                            align: BOTTOM_MID
+                            text_align: CENTER
+                            text: "Kitchen"
+                            width: 85
+                            long_mode: WRAP
+                            text_font: roboto20
+                      on_click:
+                        - homeassistant.service:
+                            service: light.toggle
+                            data:
+                              entity_id: light.group_kitchen_full
+                  - button:
+                      align_to:
+                        id: btn_restofhome_balconyporch
+                        align: OUT_BOTTOM_MID
+                        y: 8
+                      width: 122
+                      height: 140
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xAFC4CB
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_restofhome_livingroom
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F1054"
+                        - label:
+                            align: BOTTOM_MID
+                            text_align: CENTER
+                            text: "Living Room"
+                            width: 85
+                            long_mode: WRAP
+                            text_font: roboto20
+                      on_click:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.button_toggle_living_room_full
+                  - button:
+                      width: 122
+                      height: 140
+                      align_to:
+                        id: btn_restofhome_livingroom
+                        align: OUT_RIGHT_MID
+                        x: 8
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xAFC4CB
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_restofhome_office
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F04B9"
+                        - label:
+                            align: BOTTOM_MID
+                            text_align: CENTER
+                            text: "Office"
+                            width: 85
+                            long_mode: WRAP
+                            text_font: roboto20
+                      on_click:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.button_toggle_office_full
+                  - button:
+                      width: 122
+                      height: 140
+                      align_to:
+                        id: btn_restofhome_office
+                        align: OUT_RIGHT_MID
+                        x: 8
+                      border_width: 1
+                      border_color: 0x777777
+                      bg_opa: 0
+                      shadow_opa: 0
+                      checked:
+                        bg_opa: 0.8
+                        bg_color: 0xAFC4CB
+                        text_color: 0x333333
+                      checkable: true
+                      id: btn_restofhome_children
+                      widgets:
+                        - label:
+                            text_font: light40
+                            align: TOP_MID
+                            text: "\U000F0B7C"
+                        - label:
+                            align: BOTTOM_MID
+                            text_align: CENTER
+                            text: "Children"
+                            width: 85
+                            long_mode: WRAP
+                            text_font: roboto20
+                      on_click:
+                        - homeassistant.service:
+                            service: button.press
+                            data:
+                              entity_id: button.button_toggle_children_full
+
+
+              - name: "\U000F0493" #settings
+                id: tabview_mainpage_settings
+                scrollable: false
+                widgets:
+                  - checkbox:
+                      x: 5
+                      y: 80
+                      #internal: false
+                      text_font: roboto24
+                      text_color: 0xCCCCCC
+                      text: "Auto Brightness"
+                      id: settings_display_auto_brightness_checkbox
+                  - slider:
+                      x: 55
+                      y: 135
+                      id: settings_display_brightness
+                      min_value: 1
+                      max_value: 100
+                      #internal: false
+                      on_value:
+                        - if:
+                            condition:
+                              lambda: 'return id(backlight).remote_values.is_on();'
+                            then:
+                              - light.turn_on:
+                                  id: backlight
+                                  brightness: !lambda |-
+                                    return x / 100.0; // output value must be in range 0 - 1.0
+                        - lvgl.label.update:
+                            id: settings_display_brightness_label
+                            #id: display_brightness
+                            text:
+                              format: "%.0f%%"
+                              args: [ x ]
+                              # args: !lambda |-
+                              #   return id(backlight).current_values.get_brightness() * 100;
+                  - label:
+                      x: 295
+                      y: 83
+                      text_font: roboto24
+                      text_color: 0xCCCCCC
+                      text_align: RIGHT
+                      width: 100
+                      text: "N/A"
+                      id: settings_display_brightness_label
+
+
+                  - checkbox:
+                      x: 5
+                      y: 170
+                      #internal: false
+                      text_font: roboto24
+                      text_color: 0xCCCCCC
+                      text: "Auto Sleep"
+                      id: settings_display_auto_timeout_checkbox
+                  - slider:
+                      x: 55
+                      y: 225
+                      id: settings_display_timeout
+                      min_value: 10
+                      max_value: 86400
+                      value: 86400
+                      # on_value:
+                      #   - lvgl.label.update:
+                      #       id: settings_display_timeout_label
+                      #       #id: display_brightness
+                      #       text:
+                      #         format: "%.0f"
+                      #         args: [ x ]
+                  - label:
+                      x: 295
+                      y: 173
+                      text_font: roboto24
+                      text_color: 0xCCCCCC
+                      text_align: RIGHT
+                      width: 100
+                      text: "N/A"
+                      id: settings_display_timeout_label
+
+
+                  - button:
+                      id: btn_relay_toggle
+                      width: 390
+                      height: 55
+                      y: 270
+                      bg_color: 0xFFFAA0
+                      bg_opa: 0%
+                      border_width: 1
+                      border_color: 0xcccccc
+                      shadow_opa: 0
+                      text_color: 0x999999
+                      checked:
+                        bg_color: 0xFFEA90
+                        bg_opa: 80%
+                        text_color: 0x333333
+                      on_click:
+                        switch.toggle: relay
+                      layout:
+                          type: FLEX
+                          flex_flow: ROW_WRAP
+                          flex_align_main: center
+                          flex_align_cross: end
+                          pad_column: 2px
+                          pad_row: 0px
+                      widgets:
+                        - label:
+                            id: lbl_relay_toggle_icon
+                            align: center
+                            text_align: RIGHT
+                            text_font: roboto40
+                            text: "\U000F0A19"
+                            x: 0
+                            height: 55
+                        - label:
+                            align: center
+                            text_align: LEFT
+                            text_font: roboto24
+                            text: "Relay"
+                            x: 0
+                            height: 50
+
+
+
+                  - label:
+                      x: 0
+                      y: 415
+                      text_font: roboto12
+                      text_color: 0xCCCCCC
+                      text: BSSID
+                      id: settings_wifi_ssid
+                  - label:
+                      x: 0
+                      y: 430
+                      text_font: roboto12
+                      text_color: 0xCCCCCC
+                      text: BSSID (node)
+                      id: settings_wifi_bssid_node
+                  - label:
+                      x: 0
+                      y: 445
+                      text_font: roboto12
+                      text_color: 0xCCCCCC
+                      text: BSSID
+                      id: settings_wifi_bssid
+
+
+                  - label:
+                      x: 245
+                      y: 390
+                      width: 150
+                      text_font: roboto12
+                      text_color: 0xCCCCCC
+                      text_align: right
+                      text: Uptime
+                      id: settings_uptime
+                  - label:
+                      x: 245
+                      y: 415
+                      width: 150
+                      text_font: roboto12
+                      text_color: 0xCCCCCC
+                      text_align: right
+                      text: Wifi Strength
+                      id: settings_wifi_strength
+                  - label:
+                      x: 245
+                      y: 430
+                      width: 150
+                      text_font: roboto12
+                      text_color: 0xCCCCCC
+                      text_align: right
+                      text: IP Address
+                      id: settings_wifi_macaddress
+                  - label:
+                      x: 245
+                      y: 445
+                      width: 150
+                      text_font: roboto12
+                      text_color: 0xCCCCCC
+                      text_align: right
+                      text: IP Address
+                      id: settings_wifi_ipaddress
+
+
+
+        #- color_picker:
+        #    id: picker
+        #    width: 400px
+        - label:
+            align: TOP_LEFT
+            id: global_temperature_icon
+            recolor: true
+            text: "\U000F050F"
+            text_font: light30
+            text_color: 0xE0E0E0
+            x: 3
+            y: 4
+        - label:
+            id: global_temperature_label
+            align: TOP_LEFT
+            recolor: true
+            text_font: montserrat_24
+            text_color: 0xCCCCCC
+            text: "?°C"
+            x: 40
+            y: 6
+
+        - label:
+            align: TOP_LEFT
+            id: global_humidity_icon
+            recolor: true
+            text: "\U000F1A35"
+            text_font: light30
+            text_color: 0xE0E0E0
+            x: 3
+            y: 40
+        - label:
+            id: global_humidity_label
+            align: TOP_LEFT
+            recolor: true
+            text_font: montserrat_24
+            text_color: 0xCCCCCC
+            text: "?%"
+            x: 40
+            y: 42
+
+        - label:
+            align: TOP_RIGHT
+            id: global_time_label
+            recolor: true
+            text: "Time is updating"
+            text_font: ubuntumono40
+            text_color: 0xCCCCCC
+            x: -63
+            y: 0
+
+        - label:
+            align: TOP_RIGHT
+            id: global_date_label
+            recolor: true
+            text: "Date is updating"
+            text_font: montserrat_28
+            text_color: 0xBBBBBB
+            x: -63
+            y: 40
+
+    
+#-------------------------------------------
+# Graphics and Fonts
+#-------------------------------------------
+font:
+  - file: "gfonts://Roboto"
+    id: roboto12
+    size: 12
+    bpp: 4
+    extras:
+      - file: "displays/fonts/materialdesignicons-webfont.ttf"
+        glyphs:  &mdi-glyphs
+        - "\U000F0521" #mdi:toggle-switch
+        - "\U000F0A19" #mdi:toggle-switch-off-outline
+        - "\U000F18FB" #mdi:teddy-bear
+        - "\U000F0F48" #mdi:chair-rolling
+        - "\U000F04B9" #mdi:sofa
+        - "\U000F1054" #mdi:outdoor-lamp
+        - "\U000F04A3" #mdi:silverware
+        - "\U000F0B7C" #mdi:chef-hat
+        - "\U000F1B20" #mdi:desk-lamp-on
+        - "\U000F05BC" #mdi:table-furniture
+        - "\U000F09AB" #mdi:toilet
+        - "\U000F11E1" #mdi:vanity-light
+        - "\U000F091D" #mdi:wall-sconce-flat (because cannot find hue:ceiling-adore-alt)
+        - "\U000F066F" #mdi:globe-light
+        - "\U000F1798" #mdi:ceiling-fan-light
+        - "\U000F1797" #mdi:ceiling-fan
+        - "\U000F0F9E" # ac swing
+        - "\U000F04B2" # mdi:sleep
+        - "\U000F0210" # mdi:fan
+        - "\U000F0717" # mdi:snowflake
+        - "\U000F10EF" # mdi:hair-dryer
+        - "\U000F058C" # mdi:water
+        - "\U000F0425" # mdi:power
+        - "\U000F146D" # mdi:fan-chevron-down
+        - "\U000F146E" # mdi:fan-chevron-up
+        - "\U000F171D" # mdi:fan-auto
+        - "\U000F0E02" # mdi:thermometer-chevron-down
+        - "\U000F0E03" # mdi:thermometer-chevron-up
+        - "\U000F035D" # mdi:menu-down
+        - "\U000F0360" # mdi:menu-up
+        - "\U000F0504" # degrees Celsius
+        - "\U000F02E8" # human-male-female
+        - "\U000F001B" # mdi-air-conditioner
+        - "\U000F0335" # mdi-lightbulb
+        #- "\U000F0769" # mdi-ceiling-light
+        - "\U000F06B5" # mdi-lamp
+        - "\U000F08DD" # mdi-floor-lamp
+        - "\U000F12BA" # mdi-string-lights
+        - "\U000F0917" #mdi:tumble-dryer
+        - "\U000F1B2A" #mdi:faucet-variant
+        - "\U000F1A1B" #mdi:gas-burner
+        - "\U000F0292" #mdi:fridge-bottom
+        - "\U000F0493" #cog
+        - "\U000F1576" #lamps
+        - "\U000F02DC" #home
+        - "\U000F104D" #home-circle
+        - "\U000F1A35" #cloud-percent (humidity)
+        - "\U000F03D8" #color palette
+        - "\U000F050F" #thermometer
+        - "\U000F0CF2" #brightness-percent
+        - "\U000F0769" #mdi:ceiling light - to be temporarily used as stove hood todo
+  #- file: "fonts/materialdesignicons-webfont.ttf" # http://materialdesignicons.com/cdn/7.4.47/
+  - file: "gfonts://Roboto"
+    id: roboto20
+    size: 20
+    #glyphs: '!?"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz/µ³'
+    extras:
+      - file: "displays/fonts/materialdesignicons-webfont.ttf"
+        glyphs: *mdi-glyphs
+  - file: "gfonts://Roboto"
+    id: roboto24
+    size: 24
+    #glyphs: '!?"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz/µ³'
+    extras:
+      - file: "displays/fonts/materialdesignicons-webfont.ttf"
+        glyphs: *mdi-glyphs
+  - file: "gfonts://Roboto"
+    id: roboto40
+    size: 40
+    #glyphs: '!?"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz/µ³'
+    extras:
+      - file: "displays/fonts/materialdesignicons-webfont.ttf"
+        glyphs: *mdi-glyphs
+  - file: "gfonts://Roboto"
+    id: roboto48
+    size: 48
+    #glyphs: '!?"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz/µ³'
+    extras:
+        - file: "displays/fonts/materialdesignicons-webfont.ttf"
+        glyphs: *mdi-glyphs
+  - file: "gfonts://Roboto"
+    id: roboto64
+    size: 64
+    #glyphs: '!?"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz/µ³'
+    extras:
+      - file: "displays/fonts/materialdesignicons-webfont.ttf"
+        glyphs: *mdi-glyphs
+  - file: "gfonts://Ubuntu Mono"
+    id: ubuntumono40
+    size: 40
+    #glyphs: '!?"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz/µ³'
+    extras:
+      - file: "displays/fonts/materialdesignicons-webfont.ttf"
+        glyphs: *mdi-glyphs
+  - file: "gfonts://Ubuntu Mono"
+    id: ubuntumono30
+    size: 30
+    extras:
+      - file: "displays/fonts/materialdesignicons-webfont.ttf"
+        glyphs: *mdi-glyphs
+  - file: "displays/fonts/materialdesignicons-webfont.ttf"
+    id: light40
+    size: 40
+    bpp: 4
+    glyphs: *mdi-glyphs
+  - file: "displays/fonts/materialdesignicons-webfont.ttf"
+    id: light30
+    size: 30
+    bpp: 4
+    glyphs: *mdi-glyphs
+
+#-------------------------------------------
+# Touchscreen gt911 i2c
+#-------------------------------------------
+i2c:
+  - id: bus_a
+    sda: GPIO19
+    scl: GPIO45
+    #frequency: 100kHz
+
+touchscreen:
+  platform: gt911
+  transform:
+    mirror_x: false
+    mirror_y: false
+  id: my_touchscreen
+  display: my_display
+
+  on_touch:
+    
+    - light.turn_on:
+        id: backlight
+        transition_length: 1s
+    # - logger.log:
+    #     format: Touch at (%d, %d)
+    #     args: [touch.x, touch.y]
+    # - lambda: |-
+    #     ESP_LOGI("cal", "x=%d, y=%d, x_raw=%d, y_raw=%0d",
+    #         touch.x,
+    #         touch.y,
+    #         touch.x_raw,
+    #         touch.y_raw
+    #         );
+    - if:
+          condition: lvgl.is_paused
+          then:
+            - logger.log: "LVGL resuming"
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - light.turn_on: backlight
+    #- lvgl.resume:
+
+
+
+image:
+#  - file: 'images/guition_kitchen_480x480_blur.png'
+#  - file: 'images/master_bedroom_final_1.png'
+#  - file: 'images/monstrance480x480.png'
+  - file: 'images/monstrancev2-480x480.png'
+    id: bgimg
+    #resize: 240x240
+    type: RGB565
+
+
+# gradients:
+#     - id: color_bar
+#       direction: ver
+#       dither: none
+#       stops:
+#         - color: 0xFF0000
+#           position: 0
+#         - color: 0xFFFF00
+#           position: 42
+#         - color: 0x00FF00
+#           position: 84
+#         - color: 0x00FFFF
+#           position: 127
+#         - color: 0x0000FF
+#           position: 169
+#         - color: 0xFF00FF
+#           position: 212
+#         - color: 0xFF0000
+#           position: 255
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      on_value:
+        - lvgl.label.update:
+            id: settings_wifi_ipaddress
+            text:
+              format: "IP Address: %s"
+              args: [ 'x.c_str()' ]
+    ssid:
+      name: "SSID"
+      on_value:
+        - lvgl.label.update:
+            id: settings_wifi_ssid
+            text:
+              format: "SSID: %s"
+              args: [ 'x.c_str()' ]
+    bssid:
+      name: "BSSID"
+      on_value:
+        - lvgl.label.update:
+            id: settings_wifi_bssid
+            text:
+              format: "BSSID: %s"
+              args: [ 'x.c_str()' ]
+    mac_address:
+      name: "Mac Address"
+      on_value:
+        - lvgl.label.update:
+            id: settings_wifi_macaddress
+            text:
+              format: "MAC: %s"
+              args: [ 'x.c_str()' ]
+    dns_address:
+      name: "Hostname"
+
+  - platform: homeassistant
+    name: "Master Bedroom AC - fan"
+    id: sensor_master_bedroom_ac_hvac_fanmode
+    internal: true
+    entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+    attribute: fan_mode
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: lbl_ac_fan_value
+            text: !lambda |-
+              if (id(sensor_master_bedroom_ac_hvac_fanmode).get_state() == "Automatic") {
+                return "\U000F171D";
+              } else if (id(sensor_master_bedroom_ac_hvac_fanmode).get_state() == "Silent") {
+                return "\U000F04B2";
+              } else {
+                return id(sensor_master_bedroom_ac_hvac_fanmode).state.c_str();
+                //return x;
+              }
+     
+  - platform: homeassistant
+    name: "Master Bedroom AC - swing"
+    id: sensor_master_bedroom_ac_swingmode
+    internal: true
+    entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+    attribute: swing_mode
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_ac_swingmode).state == "vertical";'
+          then:
+            - lvgl.widget.update:
+                id: btn_ac_swing
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_ac_swing
+                state:
+                  checked: false
+
+  - platform: homeassistant
+    name: "Master Bedroom AC"
+    id: sensor_master_bedroom_ac_hvac_action
+    internal: true
+    entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+    #attribute: hvac_action
+    on_value: 
+      then:
+        - if: 
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ac_hvac_action).state == "off";'
+            then:
+              - lvgl.widget.update:
+                  id: btn_ac_mode_power
+                  state:
+                    checked: true
+              - lvgl.widget.update:
+                  id: btn_overview_climate
+                  state:
+                    checked: false
+            else:
+              - lvgl.widget.update:
+                  id: btn_ac_mode_power
+                  state:
+                    checked: false
+        - if: 
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ac_hvac_action).state == "drying" || id(sensor_master_bedroom_ac_hvac_action).state == "dry";'
+            then:
+              - lvgl.widget.update:
+                  id: btn_ac_mode_dry
+                  state:
+                    checked: true
+              - lvgl.widget.update:
+                  id: btn_overview_climate
+                  state:
+                    checked: true
+            else:
+              - lvgl.widget.update:
+                  id: btn_ac_mode_dry
+                  state:
+                    checked: false
+        - if: 
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ac_hvac_action).state == "cooling" || id(sensor_master_bedroom_ac_hvac_action).state == "cool";'
+            then:
+              - lvgl.widget.update:
+                  id: btn_ac_mode_cool
+                  state:
+                    checked: true
+              - lvgl.widget.update:
+                  id: btn_overview_climate
+                  state:
+                    checked: true
+            else:
+              - lvgl.widget.update:
+                  id: btn_ac_mode_cool
+                  state:
+                    checked: false
+        - if: 
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ac_hvac_action).state == "fan_only";'
+            then:
+              - lvgl.widget.update:
+                  id: btn_ac_mode_fan
+                  state:
+                    checked: true
+              - lvgl.widget.update:
+                  id: btn_overview_climate
+                  state:
+                    checked: true
+            else:
+              - lvgl.widget.update:
+                  id: btn_ac_mode_fan
+                  state:
+                    checked: false
+
+  - platform: homeassistant
+    name: "Master Bedroom - Hanger"
+    id: sensor_master_bedroom_hanger
+    internal: true
+    entity_id: switch.wifi_plug_prd1_master_hanger_rack_switch_1
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_hanger).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_hangers
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_hangers
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Master Bedroom - Toilet"
+    id: sensor_master_bedroom_toilet
+    internal: true
+    entity_id: light.aubess_master_toilet_switch
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_toilet).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_toilet
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_toilet
+                state:
+                  checked: false
+                  
+  - platform: homeassistant
+    name: "Master Bedroom - Ceiling Fan Light"
+    id: sensor_master_bedroom_ceiling_fan_light
+    internal: true
+    entity_id: light.master_bedroom_ceiling_fan_light
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_ceiling_fan_light).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_fan_light
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_fan_light
+                state:
+                  checked: false
+
+
+                   
+  - platform: homeassistant
+    name: "Master Bedroom - Ceiling Fan"
+    id: sensor_master_bedroom_ceiling_fan
+    internal: true
+    entity_id: fan.master_bedroom_ceiling_fan
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_ceiling_fan).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_fan
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_fan
+                state:
+                  checked: false
+
+  - platform: homeassistant
+    name: "Group Rest Of Home - Balcony/Porch"
+    id: sensor_group_restofhome_balcony_porch
+    internal: true
+    entity_id: light.balcony_door_number_light_group
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_group_restofhome_balcony_porch).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_restofhome_balconyporch
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_restofhome_balconyporch
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Group Rest Of Home - Dining Room"
+    id: sensor_group_restofhome_diningroom
+    internal: true
+    entity_id: text.group_dining_room_node_state
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_group_restofhome_diningroom).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_restofhome_diningroom
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_restofhome_diningroom
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Group Rest Of Home - Kitchen"
+    id: sensor_group_restofhome_kitchen
+    internal: true
+    entity_id: light.group_kitchen_full
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_group_restofhome_kitchen).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_restofhome_kitchen
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_restofhome_kitchen
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Group Rest Of Home - Living Room"
+    id: sensor_group_restofhome_livingroom
+    internal: true
+    entity_id: text.group_living_room_node_state
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_group_restofhome_livingroom).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_restofhome_livingroom
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_restofhome_livingroom
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Group Rest Of Home - Office"
+    id: sensor_group_restofhome_office
+    internal: true
+    entity_id: text.group_office_node_state
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_group_restofhome_office).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_restofhome_office
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_restofhome_office
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Group Rest Of Home - Children's Room"
+    id: sensor_group_restofhome_children
+    internal: true
+    entity_id: text.group_children_node_state
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_group_restofhome_children).state == "on";'
+          then:
+            - lvgl.widget.update:
+                id: btn_restofhome_children
+                state:
+                  checked: true
+          else:
+            - lvgl.widget.update:
+                id: btn_restofhome_children
+                state:
+                  checked: false
+
+  - platform: homeassistant
+    name: "Master Bedroom - Display Brightness"
+    id: sensor_master_bedroom_display_timeout
+    internal: true
+    entity_id: text.mbrtimeout_to_dhms_text_node
+    on_value:
+    - lvgl.label.update:
+        id: settings_display_timeout_label
+        text: !lambda return x;
+
+  - platform: homeassistant
+    name: "Master Bedroom - BSSID (Node)"
+    id: sensor_master_bedroom_bssid_node
+    internal: true
+    entity_id: text.master_bedroom_square_panel_node_bssid_2
+    on_value:
+    - lvgl.label.update:
+        id: settings_wifi_bssid_node
+        text: 
+          format: "BSSID (node): %s"
+          args: [ 'x.c_str()' ]
+
+  - platform: homeassistant
+    name: "Master Bedroom - Uptime"
+    id: sensor_master_bedroom_uptime
+    internal: true
+    #update_interval: 1s
+    entity_id: text.mbr_square_panel_uptime_to_dhms_text_node
+    on_value:
+    - lvgl.label.update:
+        id: settings_uptime
+        text: 
+          format: "Uptime: %s"
+          args: [ 'x.c_str()' ]
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 1s
+  
+  - platform: wifi_signal
+    name: "WiFi RSSI"
+    id: "RSSI"
+    update_interval: 30s
+  
+  - platform: template
+    name: "WiFi Signal"
+    unit_of_measurement: '%'
+    update_interval: 15s
+    lambda: |-
+      int prepercentage = ((id(RSSI).state + 100.0) * 2.0);
+      if (prepercentage > 100) {
+        return 100;
+      } else if (prepercentage < 0) {
+        return 0;
+      } else {
+        return prepercentage;
+      }
+    on_value:
+      - lvgl.label.update:
+          id: settings_wifi_strength
+          text:
+            format: "WiFi Strength: %.1f%%"
+            args: [ 'x' ]
+      
+  - platform: homeassistant
+    name: MBR Temp
+    entity_id: sensor.master_bedroom_control_master_bedroom_temperature
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: global_temperature_label
+            text: !lambda |-
+              static char temp_buf[8];
+              snprintf(temp_buf, sizeof(temp_buf), "%.1f°C", x);
+              return temp_buf;
+
+  - platform: homeassistant
+    name: MBR Humidity
+    entity_id: sensor.master_bedroom_control_master_bedroom_humidity
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: global_humidity_label
+            text: !lambda |-
+              static char temp_buf[9];
+              snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", x);
+              return temp_buf;
+
+  - platform: homeassistant
+    name: "Master Bedroom AC - temp"
+    id: sensor_master_bedroom_ac_hvac_temp
+    internal: true
+    entity_id: climate.daikin_s21_32_master_bedroom_master_bedroom_ac_daikin_s21
+    attribute: temperature
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: lbl_ac_temp_value
+            text:
+              format: "%.0f"
+              args: [ 'id(sensor_master_bedroom_ac_hvac_temp).get_state()' ]
+
+  - platform: homeassistant
+    name: "Master Bedroom - Ceiling Fan Speed"
+    id: sensor_master_bedroom_ceiling_fan_speed
+    internal: true
+    entity_id: fan.master_bedroom_ceiling_fan
+    attribute: percentage
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ceiling_fan_speed).state == 16;'
+            then:
+              - lvgl.slider.update:
+                  id: slider_master_bedroom_ceiling_fan
+                  value: 1
+        - if:
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ceiling_fan_speed).state == 33;'
+            then:
+              - lvgl.slider.update:
+                  id: slider_master_bedroom_ceiling_fan
+                  value: 2
+        - if:
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ceiling_fan_speed).state == 50;'
+            then:
+              - lvgl.slider.update:
+                  id: slider_master_bedroom_ceiling_fan
+                  value: 3
+        - if:
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ceiling_fan_speed).state == 66;'
+            then:
+              - lvgl.slider.update:
+                  id: slider_master_bedroom_ceiling_fan
+                  value: 4
+        - if:
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ceiling_fan_speed).state == 83;'
+            then:
+              - lvgl.slider.update:
+                  id: slider_master_bedroom_ceiling_fan
+                  value: 5
+        - if:
+            condition:
+              lambda: 'return id(sensor_master_bedroom_ceiling_fan_speed).state == 100;'
+            then:
+              - lvgl.slider.update:
+                  id: slider_master_bedroom_ceiling_fan
+                  value: 6
+
+  - platform: homeassistant
+    name: "Master Bedroom - Walkway"
+    id: sensor_master_bedroom_walkway
+    internal: true
+    entity_id: light.master_bedroom_walkway
+    attribute: brightness
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_walkway).state > 0;'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_walkway
+                state:
+                  checked: true
+            - lvgl.widget.update:
+                id: btn_light_walkway
+                state:
+                  checked: true
+            - lvgl.slider.update:
+                id: slider_walkway_details_brightness
+                value: !lambda |-
+                  if (isnan(x)) { return 0; } else { return round(x/255*100); }
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_walkway
+                state:
+                  checked: false
+            - lvgl.widget.update:
+                id: btn_light_walkway
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Master Bedroom - Walkway (Temp)"
+    id: sensor_master_bedroom_walkway_temp
+    internal: true
+    entity_id: light.master_bedroom_walkway
+    attribute: color_temp_kelvin
+    on_value:
+      then:
+        - lvgl.slider.update:
+            id: slider_walkway_details_temp
+            value: !lambda |-
+              if (isnan(x)) { return 0; /*todo to get it to return the same value*/ } else { return x; }
+  - platform: homeassistant
+    name: "Master Bedroom - Vanity"
+    id: sensor_master_bedroom_vanity
+    internal: true
+    entity_id: light.master_bedroom_vanity_light_vanity_lights
+    attribute: brightness
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_vanity).state > 0;'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_vanity
+                state:
+                  checked: true
+            - lvgl.widget.update:
+                id: btn_light_vanity
+                state:
+                  checked: true
+            - lvgl.slider.update:
+                id: slider_vanity_details_brightness
+                value: !lambda |-
+                  if (isnan(x)) { return 0; } else { return round(x/255*100); }
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_vanity
+                state:
+                  checked: false
+            - lvgl.widget.update:
+                id: btn_light_vanity
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Master Bedroom - Vanity (Temp)"
+    id: sensor_master_bedroom_vanity_temp
+    internal: true
+    entity_id: light.master_bedroom_vanity_light_vanity_lights
+    attribute: color_temp_kelvin
+    on_value:
+      then:
+        - lvgl.slider.update:
+            id: slider_vanity_details_temp
+            value: !lambda |-
+              if (isnan(x)) { return 0; /*todo to get it to return the same value*/ } else { return x; }
+  - platform: homeassistant
+    name: "Master Bedroom - Husband Bedside"
+    id: sensor_master_bedroom_husband_bedside
+    internal: true
+    entity_id: light.husband_s_bedside_lamp_2
+    attribute: brightness
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_husband_bedside).state > 0;'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_husbandbedside
+                state:
+                  checked: true
+            - lvgl.widget.update:
+                id: btn_light_husbandbedside
+                state:
+                  checked: true
+            - lvgl.slider.update:
+                id: slider_husbandbedside_details_brightness
+                value: !lambda |-
+                  if (isnan(x)) { return 0; } else { return round(x/255*100); }
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_husbandbedside
+                state:
+                  checked: false
+            - lvgl.widget.update:
+                id: btn_light_husbandbedside
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Master Bedroom - Husband Bedside (Temp)"
+    id: sensor_master_bedroom_husbandbedside_temp
+    internal: true
+    entity_id: light.husband_s_bedside_lamp_2
+    attribute: color_temp_kelvin
+    on_value:
+      then:
+        - lvgl.slider.update:
+            id: slider_husbandbedside_details_temp
+            value: !lambda |-
+              if (isnan(x)) { return 0; /*todo to get it to return the same value*/ } else { return x; }
+  - platform: homeassistant
+    name: "Master Bedroom - Husband Sidetable"
+    id: sensor_master_bedroom_husband_sidetable
+    internal: true
+    entity_id: light.husband_sidetable_under
+    attribute: brightness
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_husband_sidetable).state > 0;'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_husbandglow
+                state:
+                  checked: true
+            - lvgl.widget.update:
+                id: btn_light_husbandsidetable
+                state:
+                  checked: true
+            - lvgl.slider.update:
+                id: slider_husbandsidetable_details_brightness
+                value: !lambda |-
+                  if (isnan(x)) { return 0; } else { return round(x/255*100); }
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_husbandglow
+                state:
+                  checked: false
+            - lvgl.widget.update:
+                id: btn_light_husbandsidetable
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Master Bedroom - Husband Sidetable (Temp)"
+    id: sensor_master_bedroom_husbandsidetable_temp
+    internal: true
+    entity_id: light.husband_sidetable_under
+    attribute: color_temp_kelvin
+    on_value:
+      then:
+        - lvgl.slider.update:
+            id: slider_husbandsidetable_details_temp
+            value: !lambda |-
+              if (isnan(x)) { return 0; /*todo to get it to return the same value*/ } else { return x; }
+  - platform: homeassistant
+    name: "Master Bedroom - Wife Bedside"
+    id: sensor_master_bedroom_wife_bedside
+    internal: true
+    entity_id: light.wife_s_bedside_lamp_2
+    attribute: brightness
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_wife_bedside).state > 0;'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_wifebedside
+                state:
+                  checked: true
+            - lvgl.widget.update:
+                id: btn_light_wifebedside
+                state:
+                  checked: true
+            - lvgl.slider.update:
+                id: slider_wifebedside_details_brightness
+                value: !lambda |-
+                  if (isnan(x)) { return 0; } else { return round(x/255*100); }
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_wifebedside
+                state:
+                  checked: false
+            - lvgl.widget.update:
+                id: btn_light_wifebedside
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Master Bedroom - Wife Bedside (Temp)"
+    id: sensor_master_bedroom_wifebedside_temp
+    internal: true
+    entity_id: light.wife_s_bedside_lamp_2
+    attribute: color_temp_kelvin
+    on_value:
+      then:
+        - lvgl.slider.update:
+            id: slider_wifebedside_details_temp
+            value: !lambda |-
+              if (isnan(x)) { return 0; /*todo to get it to return the same value*/ } else { return x; }
+  - platform: homeassistant
+    name: "Master Bedroom - Wife Sidetable"
+    id: sensor_master_bedroom_wife_sidetable
+    internal: true
+    entity_id: light.wife_sidetable_under
+    attribute: brightness
+    on_value:
+      then:
+        if:
+          condition:
+            lambda: 'return id(sensor_master_bedroom_wife_sidetable).state > 0;'
+          then:
+            - lvgl.widget.update:
+                id: btn_overview_wifeglow
+                state:
+                  checked: true
+            - lvgl.widget.update:
+                id: btn_light_wifesidetable
+                state:
+                  checked: true
+            - lvgl.slider.update:
+                id: slider_wifesidetable_details_brightness
+                value: !lambda |-
+                  if (isnan(x)) { return 0; } else { return round(x/255*100); }
+          else:
+            - lvgl.widget.update:
+                id: btn_overview_wifeglow
+                state:
+                  checked: false
+            - lvgl.widget.update:
+                id: btn_light_wifesidetable
+                state:
+                  checked: false
+  - platform: homeassistant
+    name: "Master Bedroom - Wife Sidetable (Temp)"
+    id: wife_sidetable_under
+    internal: true
+    entity_id: light.master_bedroom_wifesidetable_light_vanity_lights
+    attribute: color_temp_kelvin
+    on_value:
+      then:
+        - lvgl.slider.update:
+            id: slider_wifesidetable_details_temp
+            value: !lambda |-
+              if (isnan(x)) { return 0; /*todo to get it to return the same value*/ } else { return x; }
+
+
+  - platform: homeassistant
+    name: "Master Bedroom - Display Brightness"
+    id: sensor_master_bedroom_brightness
+    internal: true
+    entity_id: light.master_bedroom_square_panel_backlight
+    attribute: brightness
+    # on_value:
+    #   then:
+    #     - logger.log: id()
+  #       - lvgl.slider.update:
+  #           id: settings_display_brightness
+  #           value: !lambda |-
+  #             if (isnan(x)) { return 0; } else { return round(x/255*100); }
+    on_value:
+    - lvgl.slider.update:
+        id: settings_display_brightness
+        value: !lambda |-
+          if (isnan(x)) { return 0; } else { return round(x/255*100); }
+
+time:
+  - platform: homeassistant
+    id: hatime
+    on_time:
+      - minutes: /1
+        seconds: /1
+        then:
+          - script.execute: time_update
+
+script:
+  - id: time_update
+    then:
+      - lvgl.label.update:
+          id: global_date_label
+          text: !lambda |-
+            static const char * const mon_names[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+            static char date_buf[20];
+            auto now = id(hatime).now();
+            auto dayofmonth = "";
+            switch (now.day_of_month) {
+              case 1:
+              case 21:
+              case 31:
+                dayofmonth = "st";
+                break;
+              case 2:
+              case 22:
+                dayofmonth = "nd";
+                break;
+              case 3:
+              case 23:
+                dayofmonth = "rd";
+                break;
+              default:
+                dayofmonth = "th";
+                break;
+            }
+            snprintf(date_buf, sizeof(date_buf), "%d%s %s %d", now.day_of_month, dayofmonth, mon_names[now.month-1], now.year);
+            //snprintf(date_buf, sizeof(date_buf), "%2d %s %d", now.day_of_month, mon_names[now.month-1], now.year);
+            return date_buf;
+            
+      - lvgl.label.update:
+          id: global_time_label
+          text:
+            format: "%02d:%02d:%02d"
+            args: [ 'id(hatime).now().hour', 'id(hatime).now().minute', 'id(hatime).now().second' ]
