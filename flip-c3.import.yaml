@@ -1,0 +1,34 @@
+# FLIP_C3 25.07 - Dash Import
+# Voidbox Industries & Chloe Madison
+# VDBX.io / @clomads
+# CC-BY-SA 4.0
+# Baseline ESPHome YAML for FLIP_C3
+# 
+
+substitutions:
+  name: "flip-c3"
+  friendly_name: "FLIP-C3"
+  project_name: "vdbxio.FLIP-C3"
+  project_version: "1.1"
+  package_git: "github://vdbxio/esphome-configs/flip-c3.yaml"
+  ap_password: "GenericPassword"
+
+packages:
+  flipc3: github://vdbxio/esphome-configs/packages/flipc3-base.yaml
+  wifi: github://vdbxio/esphome-configs/packages/wifi.yaml
+  leds: github://vdbxio/esphome-configs/packages/flipc3-leds.yaml
+  # epever485: github://vdbxio/esphome-configs/packages/include/epever485.yaml
+
+uart:
+  - id: flipuart
+    tx_pin: 21
+    rx_pin: 20
+    baud_rate: 9600
+
+
+# Bluetooth proxy takes up a lot of space, use at your own risk
+# 
+# bluetooth_proxy:
+
+
+

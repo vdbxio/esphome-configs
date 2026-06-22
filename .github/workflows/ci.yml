@@ -42,7 +42,7 @@ jobs:
       # import.yaml files use !secret wifi_ssid / wifi_password — not available in CI
       - name: Stub secrets for import YAML
         run: |
-          printf '%s\n' 'wifi_ssid: "ci"' 'wifi_password: "ci"' > secrets.yaml
+          printf '%s\n' 'wifi_ssid: "ci"' 'wifi_password: "cipassword"' > secrets.yaml
 
       - name: ESPHome ${{ matrix.esphome-version }}
         uses: esphome/build-action@v7.2.0

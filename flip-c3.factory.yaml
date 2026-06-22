@@ -1,9 +1,13 @@
-# FLIP_C3 24.09
+# FLIP_C3 25.07 - Factory
 # Voidbox Industries & Chloe Madison
 # VDBX.io / @clomads
 # CC-BY-SA 4.0
 # Baseline ESPHome YAML for FLIP_C3
 # 
+
+# FLIP-C3 factory — USB flash, ESP Web Tools, adopt. No managed OTA on device.
+# Web installer manifest (stable): .../firmware/flip-c3/manifest.json
+# Managed OTA is PwrTool-only (vdbx-managed-ota).
 
 substitutions:
   name: "flip-c3"
@@ -11,15 +15,25 @@ substitutions:
   project_name: "vdbxio.FLIP-C3"
   project_version: dev
   package_git: "github://vdbxio/esphome-configs/flip-c3.yaml"
-  
+
+esphome:
+  project:
+    version: dev
 
 packages:
   flipc3: !include packages/flipc3-base.yaml
-  dash: !include packages/dash-import.yaml
-  wifi: !include packages/flipc3-wifi.yaml
+  wifi: !include packages/wifi.yaml
   leds: !include packages/flipc3-leds.yaml
 # Copy any of the following into your yaml preceded by github://vdbxio/esphome-configs/
   qaset: !include packages/flipc3-qa.yaml
-#  uart: !include packages/flipc3-uart.yaml
-# Hours Counter is deprecated due to a bug - added uptime sensor in flipc3-base
-#  hoursCounter: !include  {file: "packages/include/hours-count.yaml", vars: { entid: counter1 }}
+
+dashboard_import:
+  package_import_url: github://vdbxio/esphome-configs/flip-c3.import.yaml
+  import_full_config: false
+
+bluetooth_proxy:
+
+improv_serial:
+
+esp32_improv:
+  authorizer: none
