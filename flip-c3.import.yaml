@@ -9,15 +9,28 @@ substitutions:
   name: "flip-c3"
   friendly_name: "FLIP-C3"
   project_name: "vdbxio.FLIP-C3"
-  project_version: "1.1"
-  package_git: "github://vdbxio/esphome-configs/flip-c3.yaml"
-  ap_password: "GenericPassword"
+  project_version: "1.0.0"
+
+esphome:
+  name_add_mac_suffix: true
 
 packages:
-  flipc3: github://vdbxio/esphome-configs/packages/flipc3-base.yaml
-  wifi: github://vdbxio/esphome-configs/packages/wifi.yaml
-  leds: github://vdbxio/esphome-configs/packages/flipc3-leds.yaml
-  # epever485: github://vdbxio/esphome-configs/packages/include/epever485.yaml
+  flipc3: github://vdbxio/esphome-configs/packages/flipc3-base.yaml@main
+  wifi: github://vdbxio/esphome-configs/packages/flipc3-wifi.yaml@main
+  leds: github://vdbxio/esphome-configs/packages/flipc3-leds.yaml@main
+  # qaset: github://vdbxio/esphome-configs/packages/flipc3-qa.yaml@main
+  # epever485: github://vdbxio/esphome-configs/packages/include/epever485.yaml@main
+  #
+  # Example packages - see github.com/vdbxio/esphome-configs for more info:
+  # lsm303agr: github://vdbxio/esphome-configs/packages/parts/lsm303agr.yaml@main
+  # victron: github://vdbxio/esphome-configs/packages/parts/victron-uart-dev.yaml@main
+  # hoursCounter: github://vdbxio/esphome-configs/packages/include/hours-count.yaml@main
+  # daly-bms: github://vdbxio/esphome-configs/packages/include/daly-bms.yaml@main
+
+# WiFi credentials 
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
 
 uart:
   - id: flipuart
@@ -25,10 +38,8 @@ uart:
     rx_pin: 20
     baud_rate: 9600
 
-
 # Bluetooth proxy takes up a lot of space, use at your own risk
-# 
-# bluetooth_proxy:
+bluetooth_proxy:
 
 
 

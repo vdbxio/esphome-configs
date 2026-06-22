@@ -18,10 +18,10 @@ jobs:
     uses: esphome/workflows/.github/workflows/build.yml@2026.4.1
     with:
       #### Modify below here to match your project ####
-      # flip-c3.yaml — FLIP-C3 web installer (no device OTA)
+      # flip-c3.factory.yaml — FLIP-C3 web installer (no device OTA)
       # pwrtool500.factory.yaml — ships on device; managed OTA via manifest
       files: |
-        flip-c3.yaml
+        flip-c3.factory.yaml
         pwrtool500.factory.yaml
       esphome-version: 2026.6.0
 

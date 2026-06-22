@@ -31,10 +31,12 @@ Validates that configs compile. Does not flash hardware or publish firmware.
 - Daily at midnight UTC (catches breakage from ESPHome `latest`)
 
 **Matrix builds**
-- `flip-c3.yaml` — dev baseline
+- `flip-c3.factory.yaml` — factory firmware (web installer)
 - `flip-c3.import.yaml` — dashboard adopt template
 - `pwrtool500.factory.yaml` — factory firmware (managed OTA)
 - `pwrtool500.import.yaml` — dashboard adopt template
+
+`flip-c3.yaml` is kept for legacy dashboard references only — not built in CI or releases.
 
 Each yaml is compiled against ESPHome `latest`. Import yamls need WiFi secrets; CI writes a stub `secrets.yaml`.
 
@@ -50,7 +52,7 @@ Runs when a **published** GitHub Release is created (drafts do not trigger).
 
 Uses [esphome/workflows build.yml](https://github.com/esphome/workflows) to compile:
 
-- `flip-c3.yaml` — web installer manifest + bins (no device OTA)
+- `flip-c3.factory.yaml` — web installer manifest + bins (no device OTA)
 - `pwrtool500.factory.yaml` — factory firmware with managed OTA
 
 Before compile, `version: dev` in yaml is replaced with the release tag (e.g. `0.9.5`).

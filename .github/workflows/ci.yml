@@ -27,8 +27,8 @@ jobs:
         #### Modify below here to match your project ####
         # Stem only — .yaml appended in build step below
         file:
-          - flip-c3              # Dev baseline (dash-import, local packages)
-          - flip-c3.import       # Dashboard adopt template (github packages)
+          - flip-c3.factory     # Factory firmware (web installer, qaset)
+          - flip-c3.import      # Dashboard adopt template (github packages)
           - pwrtool500.factory   # Factory firmware (managed OTA, qaset)
           - pwrtool500.import    # Dashboard adopt template (no manifest OTA)
         #### Modify above here to match your project ####

@@ -7,14 +7,14 @@
 
 # FLIP-C3 factory — USB flash, ESP Web Tools, adopt. No managed OTA on device.
 # Web installer manifest (stable): .../firmware/flip-c3/manifest.json
-# Managed OTA is PwrTool-only (vdbx-managed-ota).
+# On HA adopt, dashboard_import copies flip-c3.import.yaml (native OTA only).
+# Keep device blocks below in sync with import.
 
 substitutions:
   name: "flip-c3"
   friendly_name: "FLIP-C3"
   project_name: "vdbxio.FLIP-C3"
   project_version: dev
-  package_git: "github://vdbxio/esphome-configs/flip-c3.yaml"
 
 esphome:
   project:
@@ -22,18 +22,21 @@ esphome:
 
 packages:
   flipc3: !include packages/flipc3-base.yaml
-  wifi: !include packages/wifi.yaml
+  wifi: !include packages/flipc3-wifi.yaml
   leds: !include packages/flipc3-leds.yaml
-# Copy any of the following into your yaml preceded by github://vdbxio/esphome-configs/
   qaset: !include packages/flipc3-qa.yaml
 
 dashboard_import:
-  package_import_url: github://vdbxio/esphome-configs/flip-c3.import.yaml
-  import_full_config: false
+  package_import_url: github://vdbxio/esphome-configs/flip-c3.import.yaml@main
+  import_full_config: true
+
+uart:
+  - id: flipuart
+    tx_pin: 21
+    rx_pin: 20
+    baud_rate: 9600
 
 bluetooth_proxy:
-
-improv_serial:
 
 esp32_improv:
   authorizer: none
