@@ -15,16 +15,11 @@ wifi:
 
 captive_portal:
 
-bluetooth_proxy:
-
 improv_serial:
 
 web_server:
   #local: True
 
-
-esp32_improv:
-  authorizer: none
 
 sensor:
   - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB

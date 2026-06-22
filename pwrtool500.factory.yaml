@@ -62,3 +62,9 @@ switch:
 time:
   - platform: homeassistant
     id: ha_time
+
+
+bluetooth_proxy:
+
+esp32_improv:
+  authorizer: none
