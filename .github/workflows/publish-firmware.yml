@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v6  # normalize-firmware-names.sh
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: files
           # One subdir per matrix job (flip-c3/, pwrtool500/). merge-multiple collides
