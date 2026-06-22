@@ -57,7 +57,7 @@ Uses [esphome/workflows build.yml](https://github.com/esphome/workflows) to comp
 
 Before compile, `version: dev` in yaml is replaced with the release tag (e.g. `0.9.5`).
 
-ESPHome version is pinned in the workflow (`esphome-version: 2026.6.0`).
+ESPHome version tracks `latest` (same as CI).
 
 ### Job: Upload to Release
 

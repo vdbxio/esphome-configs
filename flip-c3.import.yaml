@@ -4,6 +4,11 @@
 # CC-BY-SA 4.0
 # Baseline ESPHome YAML for FLIP_C3
 # 
+# Hi Friend!
+#
+# This is where you can customize your FLIP-C3.
+# We've broken up the basics into the packages below.
+# We've left some starter configuration in place for you to edit.
 
 substitutions:
   name: "flip-c3"
@@ -43,5 +48,16 @@ uart:
 # Bluetooth proxy takes up a lot of space, use at your own risk
 bluetooth_proxy:
 
-
-
+# User button (Boot) on front of device 
+binary_sensor:
+  - platform: gpio
+    id: boot_button
+    pin: 
+      number: 9
+      #allow_other_uses: true
+      #ignore_pin_validation_error: true
+      mode:
+        input: true
+        pullup: true
+      inverted: True
+    name: Boot Button

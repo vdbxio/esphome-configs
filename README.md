@@ -2,17 +2,19 @@
 
 A modular set of YAML files to use in ESPHome with hardware from VDBX.io
 
-## Breaking changes
-25.03 - Removed number.hours_counter from base config due to calculation bug. Replaced with uptime sensor in decimal hours. Working on an updated "engine hours" counter with more features. 
-
 ## Example usage
 
-change `flip-c3.yaml` to any in the root directory
+change `xxx.yaml` to any in the root directory
 
 ```yaml
 packages:
-  vdbxio.FLIP-C3: github://vdbxio/esphome-configs/flip-c3.yaml
+  flip-c3: github://vdbxio/esphome-configs/xxx.yaml
 ```
+`*.factory.yaml` files are for building factory firmware
+`*.import.yaml` files are copied directly to a fresh yaml when importing into ESPHome
+`flip-c3.yaml` is legacy for FLIP_C3 devices prior to 1.3.0 since they still point here for simple dash import.
+
+
 
 ## Folder Layout
 
@@ -28,7 +30,11 @@ packages:
 *   usbmon.py - a script to help track down bad cables by monitoring connection stability
 
 ## Changelog
+26.06 - Finalize PwrTool config and update FLIP_C3 with custom full imports into esphome dashboard
+
 25.07 - Working on an overhaul to all linked files and removing unnessary components when adopting into ESPHome - Staring work on Github automatic builds on release.
+
+25.03 - Removed number.hours_counter from base config due to calculation bug. Replaced with uptime sensor in decimal hours. Working on an updated "engine hours" counter with more features. 
 
 24.09 - This is now ahead of the wiki source with some minor cleanup, target changes, and slight improvements.
 

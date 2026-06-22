@@ -68,3 +68,16 @@ switch:
 time:
   - platform: homeassistant
     id: ha_time
+# User button (Boot) on front of device 
+binary_sensor:
+  - platform: gpio
+    id: boot_button
+    pin: 
+      number: 9
+      #allow_other_uses: true
+      #ignore_pin_validation_error: true
+      mode:
+        input: true
+        pullup: true
+      inverted: True
+    name: Boot Button

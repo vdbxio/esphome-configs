@@ -23,7 +23,7 @@ jobs:
       files: |
         flip-c3.factory.yaml
         pwrtool500.factory.yaml
-      esphome-version: 2026.6.0
+      esphome-version: latest
 
       # ota.summary patched in upload job (release body breaks build-action heredoc)
       release-summary: ${{ github.event.release.tag_name }}
