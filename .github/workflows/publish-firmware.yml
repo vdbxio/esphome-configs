@@ -15,7 +15,7 @@ jobs:
   # Reusable ESPHome workflow: compile each yaml, stamp version: dev → release tag
   build-firmware:
     name: Build Firmware
-    uses: esphome/workflows/.github/workflows/build.yml@2026.4.1
+    uses: esphome/workflows/.github/workflows/build.yml@2026.9.0
     with:
       #### Modify below here to match your project ####
       # flip-c3.factory.yaml — FLIP-C3 web installer (no device OTA)
