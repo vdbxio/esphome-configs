@@ -25,6 +25,7 @@ jobs:
     outputs:
       run: ${{ steps.decide.outputs.run }}
       key: ${{ steps.key.outputs.key }}
+      version: ${{ steps.key.outputs.version }}
     steps:
       - name: Checkout source code
         if: github.event_name == 'schedule'
@@ -34,9 +35,15 @@ jobs:
         id: key
         if: github.event_name == 'schedule'
         run: |
-          version=$(curl -fsSL https://pypi.org/pypi/esphome/json | jq -r .info.version)
-          echo "ESPHome latest: $version"
-          echo "key=nightly-ok-${version}-${{ hashFiles('**/*.yaml', '.github/workflows/ci.yml') }}" >> "$GITHUB_OUTPUT"
+          if version=$(curl -fsSL https://pypi.org/pypi/esphome/json | jq -er .info.version); then
+            echo "ESPHome latest: $version"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "key=nightly-ok-${version}-${{ hashFiles('**/*.yaml', '.github/workflows/ci.yml') }}" >> "$GITHUB_OUTPUT"
+          else
+            # PyPI lookup failed: use a one-off key so this run builds "latest" instead of skipping
+            echo "::warning::Could not look up the latest ESPHome version; building anyway"
+            echo "key=nightly-unknown-${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Look for a green build of this version
         id: seen
@@ -90,7 +97,8 @@ jobs:
         uses: esphome/build-action@v7.3.0
         with:
           yaml-file: ${{ matrix.file }}.yaml  # e.g. pwrtool500.factory.yaml
-          version: ${{ matrix.esphome-version }}  # ESPHome pip version in container
+          # Nightly builds the exact version the skip check looked up, so the green marker matches what was built
+          version: ${{ needs.check.outputs.version || matrix.esphome-version }}
 
   # Remember this ESPHome version + config set as green, so tomorrow's nightly can skip
   mark-green:
