@@ -17,8 +17,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Nightly only: skip the builds when neither ESPHome nor the configs changed
+  # since the last green nightly run. PRs always build.
+  check:
+    name: Check for ESPHome or config changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+      key: ${{ steps.key.outputs.key }}
+    steps:
+      - name: Checkout source code
+        if: github.event_name == 'schedule'
+        uses: actions/checkout@v6
+
+      - name: Latest ESPHome version
+        id: key
+        if: github.event_name == 'schedule'
+        run: |
+          version=$(curl -fsSL https://pypi.org/pypi/esphome/json | jq -r .info.version)
+          echo "ESPHome latest: $version"
+          echo "key=nightly-ok-${version}-${{ hashFiles('**/*.yaml', '.github/workflows/ci.yml') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Look for a green build of this version
+        id: seen
+        if: github.event_name == 'schedule'
+        uses: actions/cache/restore@v4
+        with:
+          path: .nightly-ok
+          key: ${{ steps.key.outputs.key }}
+          lookup-only: true
+
+      - name: Decide
+        id: decide
+        run: |
+          if [ "${{ github.event_name }}" = schedule ] && [ "${{ steps.seen.outputs.cache-hit }}" = true ]; then
+            echo "Nothing changed since the last green nightly build; skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
   ci:
     name: Building ${{ matrix.file }} / ${{ matrix.esphome-version }}
+    needs: check
+    if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false   # Keep building other matrix legs if one yaml fails
@@ -49,3 +91,16 @@ jobs:
         with:
           yaml-file: ${{ matrix.file }}.yaml  # e.g. pwrtool500.factory.yaml
           version: ${{ matrix.esphome-version }}  # ESPHome pip version in container
+
+  # Remember this ESPHome version + config set as green, so tomorrow's nightly can skip
+  mark-green:
+    name: Mark nightly build green
+    needs: [check, ci]
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok > .nightly-ok
+      - uses: actions/cache/save@v4
+        with:
+          path: .nightly-ok
+          key: ${{ needs.check.outputs.key }}
