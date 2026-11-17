@@ -58,15 +58,26 @@ esphome:
       then:
         - lambda: |-
             id(ina_unidir_mode) = (id(mode_select).current_option() != "Battery Monitor - Bidirectional");
-            auto &t = soc_tracker::tracker();
-            t.synchronized = id(soc_synchronized);
-            // NAN counter = first boot of this firmware: seed from the old soc_percent
-            t.begin(id(soc_remaining_ah), id(soc_percent), id(soc_capacity_ah_num).state);
-            id(soc_remaining_ah) = (float) t.remaining_ah;
-            id(soc_synchronized) = t.synchronized;
-            ESP_LOGI("soc", "SoC start: %.2f Ah of %.1f Ah (%.1f%%), synchronized=%s",
-                     t.remaining_ah, t.capacity_ref, t.soc_percent(), t.synchronized ? "yes" : "no");
-        - component.update: soc_percent_sensor
+        - script.execute: soc_seed
+
+script:
+  # Seeds the tracker from restored state. Runs from on_boot, and from the 1 s interval as a
+  # fallback: another package that writes on_boot as a single block (not a list) replaces
+  # this package's on_boot when ESPHome merges packages, and SoC must still start.
+  - id: soc_seed
+    mode: single
+    then:
+      - lambda: |-
+          auto &t = soc_tracker::tracker();
+          if (t.started) return;
+          t.synchronized = id(soc_synchronized);
+          // NAN counter = first boot of this firmware: seed from the old soc_percent
+          t.begin(id(soc_remaining_ah), id(soc_percent), id(soc_capacity_ah_num).state);
+          id(soc_remaining_ah) = (float) t.remaining_ah;
+          id(soc_synchronized) = t.synchronized;
+          ESP_LOGI("soc", "SoC start: %.2f Ah of %.1f Ah (%.1f%%), synchronized=%s",
+                   t.remaining_ah, t.capacity_ref, t.soc_percent(), t.synchronized ? "yes" : "no");
+      - component.update: soc_percent_sensor
 
 select:
   - platform: template
@@ -179,7 +190,10 @@ interval:
           const float dt = last_ms == 0 ? 0.0f : (now - last_ms) / 1000.0f;
           last_ms = now;
           auto &t = soc_tracker::tracker();
-          if (!t.started) return;  // on_boot seeds first
+          if (!t.started) {  // on_boot normally seeds; fallback if it was overridden
+            id(soc_seed).execute();
+            return;
+          }
 
           soc_tracker::Settings s;
           s.capacity_ah = id(soc_capacity_ah_num).state;
