@@ -25,11 +25,32 @@ packages:
     *   /include - functions
     *   /parts - component setups
     *   TODO - simplify baseline files - maybe /base
+*   /components - ESPHome external components (pulled by packages via `external_components`)
+    *   /soc_tracker - SoC counter + full-charge sync logic for `packages/parts/ina2xx-soc.yaml`
+*   /tests - host-side C++ tests (`g++ -std=c++17 -I components tests/soc_tracker_test.cpp`)
 *   /bin - binary packages and manifest for web installer
 *   upload.py - a script to batch upload firmware to devices
 *   usbmon.py - a script to help track down bad cables by monitoring connection stability
 
+## PwrTool 500 State of Charge
+
+`packages/parts/ina2xx-soc.yaml` keeps a remaining-Ah counter that is clamped to 0..Capacity and only
+counts in Battery mode. It re-syncs to 100 % automatically, Victron style, once these are set in HA
+(device config entities):
+
+| Entity | Default | Notes |
+| --- | --- | --- |
+| Capacity - Ah | 100 | Your pack's usable Ah |
+| Charged Voltage | 0 (off) | ~0.2-0.3 V below charger absorption/float, e.g. 27.7 V for 8S LiFePO4 at 28.0 V. 0 disables auto-sync |
+| Tail Current | 4.0 A | Sync when charge current falls to this or below. Keep it above the shunt's zero offset (~1 A) |
+| Charged Detection Time | 3 min | Both conditions must hold this long |
+| Charge Efficiency | 100 % | LiFePO4 ~99, lead-acid ~85-95 |
+
+`Reset SoC to 100%` still syncs by hand. Diagnostics: `SoC Synchronized`, `Last SoC Sync`, `Remaining Charge`.
+
 ## Changelog
+26.11 - PwrTool SoC: clamped Ah counter (no more stuck-at-100 % after charging), automatic full-charge sync, Charge Efficiency, sync diagnostics.
+
 26.06 - Finalize PwrTool config and update FLIP_C3 with custom full imports into esphome dashboard
 
 25.07 - Working on an overhaul to all linked files and removing unnessary components when adopting into ESPHome - Staring work on Github automatic builds on release.
