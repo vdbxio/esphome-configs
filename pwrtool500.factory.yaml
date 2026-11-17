@@ -14,6 +14,8 @@ substitutions:
   friendly_name: "PwrTool 500"
   project_name: "vdbxio.PwrTool500"
   project_version: dev
+  # Build the SoC tracker component from this checkout, not github @main
+  soc_tracker_source: components
 
 esphome:
   project:

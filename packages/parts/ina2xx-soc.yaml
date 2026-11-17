@@ -1,4 +1,4 @@
-# INA2XX State of Charge (SoC) via Amp-Hour Integration
+# INA2XX State of Charge (SoC) — clamped Ah counter with Victron-style full sync
 # Voidbox Industries & Chloe Madison
 # VDBX.io / @clomads
 # CC-BY-SA 4.0
@@ -7,19 +7,50 @@
 #
 # Usage: !include {file: "packages/parts/ina2xx-soc.yaml", vars: {current_id: rawI}}
 #
-# Requires packages/parts/ina2xx.yaml (rawI, rawP). Provides Mode select → ina_unidir_mode.
+# Requires packages/parts/ina2xx.yaml (rawI, rawV, rawP). Provides Mode select → ina_unidir_mode.
+# Pulls the soc_tracker external component (components/soc_tracker/soc_tracker.h), which
+# holds the counter / sync state machine. Remote (github://) users get it from @main; a
+# local checkout sets substitution soc_tracker_source: components (see pwrtool500.factory.yaml).
 #
 # Integration / split sensors are disabled_by_default — enable the ones you need in HA:
 #   Battery: In/Out splits + Net Charge Delta + dailies as desired
 #   Load: enable Out integrators (In templates stay at 0)
 #   Charger: enable In integrators (Out templates stay at 0)
 #
-# SoC % stays visible in all modes but only updates in Battery mode (frozen on Load/Charger).
+# How SoC works
+#   - Remaining Ah is one counter, clamped to [0, Capacity] every second, so charging past
+#     full (or discharging past empty) is not banked: discharge starts moving SoC at once.
+#   - It only counts in Battery mode. Load/Charger modes freeze it (no jump on switching back).
+#   - Charge Efficiency (default 100 %) scales charging current only. LiFePO4 ~99, lead-acid ~85-95.
+#   - Auto-sync to 100 % (Victron "charged" detection): Bus Voltage >= Charged Voltage AND
+#     signed current <= Tail Current, continuously for Charged Detection Time. Fires once per
+#     full event; re-arms when voltage drops below Charged Voltage.
+#       Charged Voltage   default 0 = auto-sync OFF. Set ~0.2-0.3 V below your charger's
+#                         absorption/float voltage, e.g. 8S LiFePO4 at 28.0 V CV → 27.7 V.
+#                         There is no safe non-zero default across 12/24/48 V packs: 13.9 V
+#                         on a 24 V pack would "sync" to 100 % at rest.
+#       Tail Current      default 4.0 A. Must sit above the shunt's zero offset (~1 A on some
+#                         units). Victron suggests ~2-4 % of capacity.
+#       Detection Time    default 3 min (Victron default).
+#   - "Reset SoC to 100%" forces a sync by hand.
+#   - Synchronized (diagnostic) is on after any sync; off after first boot of this firmware
+#     and after Capacity changes (SoC % is kept, Ah is rescaled).
+#   - Last SoC Sync (diagnostic) needs a time source (time: homeassistant in the device YAML).
+#
+# Upgrades: devices coming from the old integrator seed the counter from the restored
+# soc_percent, so SoC does not jump. Flash writes: only the counter changes every second
+# (plus the existing Net Charge Delta / lifetime integrators); everything else changes rarely.
 
 substitutions:
   current_id: "rawI"           # From ina2xx.yaml (after mode filters)
-  soc_min: "0.0"
-  soc_max: "100.0"
+  voltage_id: "rawV"           # From ina2xx.yaml
+  soc_tracker_source: "github://vdbxio/esphome-configs@main"
+
+external_components:
+  - source: ${soc_tracker_source}
+    components: [soc_tracker]
+
+soc_tracker:
 
 esphome:
   on_boot:
@@ -27,6 +58,15 @@ esphome:
       then:
         - lambda: |-
             id(ina_unidir_mode) = (id(mode_select).current_option() != "Battery Monitor - Bidirectional");
+            auto &t = soc_tracker::tracker();
+            t.synchronized = id(soc_synchronized);
+            // NAN counter = first boot of this firmware: seed from the old soc_percent
+            t.begin(id(soc_remaining_ah), id(soc_percent), id(soc_capacity_ah_num).state);
+            id(soc_remaining_ah) = (float) t.remaining_ah;
+            id(soc_synchronized) = t.synchronized;
+            ESP_LOGI("soc", "SoC start: %.2f Ah of %.1f Ah (%.1f%%), synchronized=%s",
+                     t.remaining_ah, t.capacity_ref, t.soc_percent(), t.synchronized ? "yes" : "no");
+        - component.update: soc_percent_sensor
 
 select:
   - platform: template
@@ -57,16 +97,112 @@ number:
     device_class: "energy"
     unit_of_measurement: "Ah"
     entity_category: config
+  - platform: template
+    id: soc_charged_v_num
+    name: "Charged Voltage"
+    icon: "mdi:battery-charging-100"
+    initial_value: 0.0          # 0 = auto-sync disabled (no safe default across 12/24/48 V)
+    min_value: 0.0
+    max_value: 85.0             # INA238 bus limit
+    step: 0.05
+    optimistic: true
+    restore_value: yes
+    device_class: "voltage"
+    unit_of_measurement: "V"
+    entity_category: config
+  - platform: template
+    id: soc_tail_a_num
+    name: "Tail Current"
+    icon: "mdi:current-dc"
+    initial_value: 4.0          # clears ~1 A shunt offset with margin
+    min_value: 0.0
+    max_value: 100.0
+    step: 0.1
+    optimistic: true
+    restore_value: yes
+    device_class: "current"
+    unit_of_measurement: "A"
+    entity_category: config
+  - platform: template
+    id: soc_detect_min_num
+    name: "Charged Detection Time"
+    icon: "mdi:timer-sand"
+    initial_value: 3.0          # Victron default
+    min_value: 0.5
+    max_value: 60.0
+    step: 0.5
+    optimistic: true
+    restore_value: yes
+    device_class: "duration"
+    unit_of_measurement: "min"
+    entity_category: config
+  - platform: template
+    id: soc_charge_eff_num
+    name: "Charge Efficiency"
+    icon: "mdi:battery-arrow-up"
+    initial_value: 100.0        # unchanged behaviour; LiFePO4 ~99, lead-acid ~85-95
+    min_value: 50.0
+    max_value: 100.0
+    step: 0.5
+    optimistic: true
+    restore_value: yes
+    unit_of_measurement: "%"
+    entity_category: config
 
 globals:
+  # Legacy (pre-sync firmware): SoC %, restored. Read once to seed soc_remaining_ah on
+  # upgrade, never written again (no flash wear). Keep the id: it is the NVS key.
   - id: soc_percent
     type: float
     restore_value: yes
     initial_value: '100.0'
-  - id: current_charge_ah
+  # Owned remaining-Ah counter. NAN = not yet seeded by this firmware.
+  - id: soc_remaining_ah
     type: float
     restore_value: yes
-    initial_value: '100.0'
+    initial_value: 'NAN'
+  - id: soc_synchronized
+    type: bool
+    restore_value: yes
+    initial_value: 'false'
+  - id: soc_last_sync_epoch
+    type: uint32_t
+    restore_value: yes
+    initial_value: '0'
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          static uint32_t last_ms = 0;
+          const uint32_t now = millis();
+          const float dt = last_ms == 0 ? 0.0f : (now - last_ms) / 1000.0f;
+          last_ms = now;
+          auto &t = soc_tracker::tracker();
+          if (!t.started) return;  // on_boot seeds first
+
+          soc_tracker::Settings s;
+          s.capacity_ah = id(soc_capacity_ah_num).state;
+          s.charged_v = id(soc_charged_v_num).state;
+          s.tail_a = id(soc_tail_a_num).state;
+          s.detect_s = id(soc_detect_min_num).state * 60.0f;
+          s.charge_eff_pct = id(soc_charge_eff_num).state;
+          const bool battery = id(mode_select).current_option() == "Battery Monitor - Bidirectional";
+
+          const bool was_synced = t.synchronized;
+          const bool fired = t.step(id(${current_id}).state, id(${voltage_id}).state, dt, battery, s);
+          id(soc_remaining_ah) = (float) t.remaining_ah;
+          id(soc_synchronized) = t.synchronized;
+          if (was_synced != t.synchronized) id(soc_synced_bs).publish_state(t.synchronized);
+          if (fired) {
+            ESP_LOGI("soc", "Charged detected (%.2f V, %.2f A for %.1f min): SoC synced to 100%%",
+                     id(${voltage_id}).state, id(${current_id}).state, s.detect_s / 60.0f);
+            id(net_ah).reset();
+            const time_t epoch = ::time(nullptr);
+            if (epoch > 1600000000) id(soc_last_sync_epoch) = (uint32_t) epoch;
+            id(soc_percent_sensor).update();
+            id(soc_last_sync_text).update();
+          }
 
 sensor:
   # --- Directional splits (feed lifetime integrators below) ---
@@ -173,7 +309,8 @@ sensor:
     state_class: "total_increasing"
     entity_category: diagnostic
 
-  # Signed net Ah since last SoC reset — drives SoC % in Battery mode only
+  # Signed net Ah since the last SoC sync/reset (unclamped, all modes). Informational only:
+  # SoC no longer derives from it.
   - platform: integration
     name: "Net Charge Delta"
     id: net_ah
@@ -183,19 +320,9 @@ sensor:
     unit_of_measurement: "Ah"
     restore: true
     disabled_by_default: true
-    on_value:
-      - lambda: !lambda |-
-          if (id(mode_select).current_option() != "Battery Monitor - Bidirectional") return;
-          id(current_charge_ah) = id(soc_capacity_ah_num).state + x;
-          float percent = 100.0f * (id(current_charge_ah) / id(soc_capacity_ah_num).state);
-          if (percent < ${soc_min}) percent = ${soc_min};
-          if (percent > ${soc_max}) percent = ${soc_max};
-          id(soc_percent) = percent;
-      - sensor.template.publish:
-          id: soc_percent_sensor
-          state: !lambda 'return id(soc_percent);'
     entity_category: diagnostic
 
+  # Entity name / object id (state_of_charge__soc_) is relied on by the Venus driver — keep.
   - platform: template
     id: soc_percent_sensor
     name: "State of Charge (SoC)"
@@ -203,8 +330,26 @@ sensor:
     accuracy_decimals: 1
     device_class: "battery"
     state_class: "measurement"
-    lambda: 'return id(soc_percent);'
+    lambda: |-
+      auto &t = soc_tracker::tracker();
+      if (!t.started) return {};  // not seeded yet (before on_boot) — don't publish
+      return t.soc_percent();
     update_interval: 10s
+
+  - platform: template
+    id: soc_remaining_ah_sensor
+    name: "Remaining Charge"
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 2
+    state_class: "measurement"
+    icon: "mdi:battery-50"
+    lambda: |-
+      auto &t = soc_tracker::tracker();
+      if (!t.started) return {};
+      return (float) t.remaining_ah;
+    update_interval: 10s
+    disabled_by_default: true
+    entity_category: diagnostic
 
   # total_daily_energy integrates any sensor over h (Wh from W, Ah from A); resets at midnight
   - platform: total_daily_energy
@@ -220,6 +365,30 @@ sensor:
     disabled_by_default: true
     entity_category: diagnostic
 
+binary_sensor:
+  - platform: template
+    id: soc_synced_bs
+    name: "SoC Synchronized"
+    icon: "mdi:battery-check"
+    entity_category: diagnostic
+    lambda: 'return id(soc_synchronized);'
+
+text_sensor:
+  - platform: template
+    id: soc_last_sync_text
+    name: "Last SoC Sync"
+    device_class: timestamp
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      const time_t epoch = id(soc_last_sync_epoch);
+      if (epoch == 0) return {};
+      struct tm tmv;
+      gmtime_r(&epoch, &tmv);
+      char buf[24];
+      strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &tmv);
+      return std::string(buf);
+
 button:
   - platform: template
     name: "Reset SoC to 100%"
@@ -228,10 +397,15 @@ button:
     entity_category: config
     on_press:
       - lambda: |-
-          id(current_charge_ah) = id(soc_capacity_ah_num).state;
-          id(soc_percent) = 100.0;
+          auto &t = soc_tracker::tracker();
+          t.set_capacity(id(soc_capacity_ah_num).state);
+          t.sync_full();
+          id(soc_remaining_ah) = (float) t.remaining_ah;
+          id(soc_synchronized) = true;
+          id(soc_synced_bs).publish_state(true);
+          const time_t epoch = ::time(nullptr);
+          if (epoch > 1600000000) id(soc_last_sync_epoch) = (uint32_t) epoch;
       - sensor.integration.reset: net_ah
-      - sensor.template.publish:
-          id: soc_percent_sensor
-          state: 100.0
+      - component.update: soc_percent_sensor
+      - component.update: soc_last_sync_text
       - logger.log: "SoC reset to 100%"

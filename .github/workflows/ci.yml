@@ -7,6 +7,9 @@ on:
   pull_request:
     paths:
       - '*.yaml'                    # Only run when configs change
+      - 'packages/**'
+      - 'components/**'
+      - 'tests/**'
       - '.github/workflows/ci.yml'
   schedule:
     - cron: '0 0 * * *'             # Midnight UTC — catch ESPHome "latest" breakage
@@ -38,7 +41,7 @@ jobs:
           if version=$(curl -fsSL https://pypi.org/pypi/esphome/json | jq -er .info.version); then
             echo "ESPHome latest: $version"
             echo "version=$version" >> "$GITHUB_OUTPUT"
-            echo "key=nightly-ok-${version}-${{ hashFiles('**/*.yaml', '.github/workflows/ci.yml') }}" >> "$GITHUB_OUTPUT"
+            echo "key=nightly-ok-${version}-${{ hashFiles('**/*.yaml', 'components/**', '.github/workflows/ci.yml') }}" >> "$GITHUB_OUTPUT"
           else
             # PyPI lookup failed: use a one-off key so this run builds "latest" instead of skipping
             echo "::warning::Could not look up the latest ESPHome version; building anyway"
@@ -99,6 +102,18 @@ jobs:
           yaml-file: ${{ matrix.file }}.yaml  # e.g. pwrtool500.factory.yaml
           # Nightly builds the exact version the skip check looked up, so the green marker matches what was built
           version: ${{ needs.check.outputs.version || matrix.esphome-version }}
+
+  # Host-side unit test for the SoC tracker (components/soc_tracker)
+  host-tests:
+    name: SoC tracker host test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+      - name: Build and run
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -I components tests/soc_tracker_test.cpp -o soc_tracker_test
+          ./soc_tracker_test
 
   # Remember this ESPHome version + config set as green, so tomorrow's nightly can skip
   mark-green:
